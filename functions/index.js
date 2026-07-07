@@ -6,6 +6,7 @@ import {authenticate} from "./auth.js";
 import splitwiseRouter from "./routes/splitwise.js";
 import calendarRouter from "./routes/calendar.js";
 import flightAwareRouter from "./routes/flightAware.js";
+import tasksRouter from "./routes/tasks.js";
 
 // Initializations
 Sentry.init({
@@ -21,6 +22,7 @@ app.use(authenticate);
 app.use("/splitwise", splitwiseRouter);
 app.use("/calendar", calendarRouter);
 app.use("/flightaware", flightAwareRouter);
+app.use("/tasks", tasksRouter);
 
 // invoker: "public" allows unauthenticated invocations at the IAM layer;
 // the actual access control is the bearer-token check in auth.js

@@ -11,6 +11,9 @@ Firebase Cloud Function (`functions/index.js`). Single exported function `guiddl
 - `GET /splitwise/groups` — returns the user's Splitwise groups (`{id, name}[]`) for callers building a group picker.
 - `POST /calendar/events` — creates a Google Calendar event; accepts `{summary, start, end, timeZone?, location?, description?, calendar?: "default"|"shared", reminders?, isSpecialProject?}`. All-day vs timed is inferred from whether `start` contains `T`.
 - `GET /flightaware/track?flightNumber=<IATA>` — resolves an IATA flight number to a live-tracking URL, or `{url: null}` if not found. Composition (building a calendar description that embeds this link) is the caller's job — callers call this first, then `/calendar/events` — not handled server-side, to keep `/calendar/events` generic for callers that don't care about flights.
+- `POST /tasks` — creates a Google Task; accepts `{title, notes?, due?, taskListId?}` (`taskListId` defaults to `GOOGLE_TASKS_LIST_ID`). `due` is date-only (`YYYY-MM-DD`) — the Google Tasks API silently discards any time-of-day, so the route doesn't pretend otherwise.
+- `GET /tasks` — lists tasks on a list (`taskListId?`, `showCompleted?`, both optional query params); returns `{id, title, notes, due, status}[]`.
+- `PATCH /tasks/:id` — updates a task's status (defaults to marking it `"completed"`; accepts `{status?, taskListId?}`).
 
 ## Auth
 
@@ -22,11 +25,14 @@ Each route requires `Authorization: Bearer <token>`, validated in `auth.js` agai
 
 Each in `functions/utils/`, ported/consolidated from Guimail's equivalents (`axiosClient.js`, `googleAuth.js`, `googleCalendar.js`, `flightAware.js` are unchanged; `splitwise.js` is the consolidated version, with an optional `groupId` threaded through every expense creator and `getFriendsList`/`getGroups` added for picker UIs).
 
+`googleTasks.js` is net new and deliberately doesn't reuse `googleAuth.js`'s service-account factory — personal Google Task lists have no sharing/ACL mechanism, so the service account can't be granted access. It authenticates via OAuth2 with a refresh token instead. See `scripts/tasks-setup.md` for the one-time manual setup (this part requires Gui's own browser/Google login — it can't be scripted end-to-end).
+
 ## Required env vars
 
-`SENTRY_DSN`, `SPLITWISE_API_KEY`, `SPLITWISE_FRIENDS`, `SPLITWISE_ID_GUI`, `SPLITWISE_ID_GEORGIA`, `GOOGLE_CAL_DEFAULT_ID`, `GOOGLE_CAL_SHARED_ID`, `FLIGHTAWARE_AEROAPI_KEY`, one `GUIDDLEWARE_SECRET_<CONSUMER>` per consumer — kept in `functions/.env` (gitignored). Also needs `functions/service-account-key.json` (gitignored) for Google Calendar auth, same file Guimail used to hold.
+`SENTRY_DSN`, `SPLITWISE_API_KEY`, `SPLITWISE_FRIENDS`, `SPLITWISE_ID_GUI`, `SPLITWISE_ID_GEORGIA`, `GOOGLE_CAL_DEFAULT_ID`, `GOOGLE_CAL_SHARED_ID`, `FLIGHTAWARE_AEROAPI_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_TASKS_REFRESH_TOKEN`, `GOOGLE_TASKS_LIST_ID`, one `GUIDDLEWARE_SECRET_<CONSUMER>` per consumer — kept in `functions/.env` (gitignored). Also needs `functions/service-account-key.json` (gitignored) for Google Calendar auth, same file Guimail used to hold.
 
 - `SPLITWISE_FRIENDS` — minified JSON array of `{id, name, nickname}`; source of truth is `functions/scripts/friends.json` (gitignored, moved here from Guimail); run `npm run friends` to update `.env`; names are indexed by first name, full name, and each nickname token (split on spaces)
+- `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`/`GOOGLE_TASKS_REFRESH_TOKEN`/`GOOGLE_TASKS_LIST_ID` — see `scripts/tasks-setup.md` for how to obtain each; `scripts/getGoogleOAuthToken.js` and `scripts/listGoogleTaskLists.js` are one-off local scripts, not deployed with the function
 
 ## Local testing
 
