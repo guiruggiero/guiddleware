@@ -33,7 +33,7 @@ Calendar/Sheets):
      use with a non-restricted scope like `tasks` — you'll just see an
      "unverified app" warning during consent (expected, click through it).
 
-## 4. Add client credentials to `functions/.env`
+## 4. Add client credentials to `tools/.env`
 
 ```
 GOOGLE_OAUTH_CLIENT_ID=<client ID from step 2>
@@ -42,7 +42,7 @@ GOOGLE_OAUTH_CLIENT_SECRET=<client secret from step 2>
 
 ## 5. Get a Tasks refresh token
 
-From `functions/`, run:
+From `tools/`, run:
 
 ```
 node --env-file=.env scripts/getGoogleOAuthToken.js https://www.googleapis.com/auth/tasks
@@ -54,7 +54,7 @@ node --env-file=.env scripts/getGoogleOAuthToken.js https://www.googleapis.com/a
    expected. Copy the `code` value (or the whole URL) from the browser's
    address bar
 3. Paste it back into the terminal prompt
-4. Copy the printed refresh token into `functions/.env` as:
+4. Copy the printed refresh token into `tools/.env` as:
 
 ```
 GOOGLE_TASKS_REFRESH_TOKEN=<printed refresh token>
@@ -66,14 +66,14 @@ repeating this flow.
 
 ## 6. Find a task list ID
 
-From `functions/`, run:
+From `tools/`, run:
 
 ```
 node --env-file=.env scripts/listGoogleTaskLists.js
 ```
 
 This prints every task list on the account with its `id`. Copy the `id` of
-the list Guiddleware should use into `functions/.env` as:
+the list Guiddleware should use into `tools/.env` as:
 
 ```
 GOOGLE_TASKS_LIST_ID=<task list id>

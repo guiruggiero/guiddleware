@@ -1,6 +1,6 @@
-# functions/CLAUDE.md
+# tools/CLAUDE.md
 
-Firebase Cloud Function (`functions/index.js`). Single exported function `guiddleware`, wrapping an Express app so every route below is one deployed function/URL with real internal path routing — not one Cloud Function per capability (contrast with `guipt`/`guiwise` in the `website` repo, which are separate functions). Deployed into the shared `guiruggiero` Firebase project, alongside Guimail's `guimail` function and the website's `guipt`/`guiwise`.
+Firebase Cloud Function (`tools/index.js`). Single exported function `guiddleware`, wrapping an Express app so every route below is one deployed function/URL with real internal path routing — not one Cloud Function per capability (contrast with `guipt`/`guiwise` in the `website` repo, which are separate functions). Deployed into the shared `guiruggiero` Firebase project, alongside Guimail's `guimail` function and the website's `guipt`/`guiwise`.
 
 **URL**: `https://us-central1-guiruggiero.cloudfunctions.net/guiddleware` — same stable `cloudfunctions.net` shape as `guimail`/`guipt`/`guiwise`. `firebase deploy` prints a `*.run.app` URL after deploying (the underlying Cloud Run revision) — ignore that one, it's not what callers should use.
 
@@ -23,15 +23,15 @@ Each route requires `Authorization: Bearer <token>`, validated in `auth.js` agai
 
 ## Utilities
 
-Each in `functions/utils/`, ported/consolidated from Guimail's equivalents (`axiosClient.js`, `googleAuth.js`, `googleCalendar.js`, `flightAware.js` are unchanged; `splitwise.js` is the consolidated version, with an optional `groupId` threaded through every expense creator and `getFriendsList`/`getGroups` added for picker UIs).
+Each in `tools/utils/`, ported/consolidated from Guimail's equivalents (`axiosClient.js`, `googleAuth.js`, `googleCalendar.js`, `flightAware.js` are unchanged; `splitwise.js` is the consolidated version, with an optional `groupId` threaded through every expense creator and `getFriendsList`/`getGroups` added for picker UIs).
 
 `googleTasks.js` is net new and deliberately doesn't reuse `googleAuth.js`'s service-account factory — personal Google Task lists have no sharing/ACL mechanism, so the service account can't be granted access. It authenticates via OAuth2 with a refresh token instead. See `scripts/tasks-setup.md` for the one-time manual setup (this part requires Gui's own browser/Google login — it can't be scripted end-to-end).
 
 ## Required env vars
 
-`SENTRY_DSN`, `SPLITWISE_API_KEY`, `SPLITWISE_FRIENDS`, `SPLITWISE_ID_GUI`, `SPLITWISE_ID_GEORGIA`, `GOOGLE_CAL_DEFAULT_ID`, `GOOGLE_CAL_SHARED_ID`, `FLIGHTAWARE_AEROAPI_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_TASKS_REFRESH_TOKEN`, `GOOGLE_TASKS_LIST_ID`, one `GUIDDLEWARE_SECRET_<CONSUMER>` per consumer — kept in `functions/.env` (gitignored). Also needs `functions/service-account-key.json` (gitignored) for Google Calendar auth, same file Guimail used to hold.
+`SENTRY_DSN`, `SPLITWISE_API_KEY`, `SPLITWISE_FRIENDS`, `SPLITWISE_ID_GUI`, `SPLITWISE_ID_GEORGIA`, `GOOGLE_CAL_DEFAULT_ID`, `GOOGLE_CAL_SHARED_ID`, `FLIGHTAWARE_AEROAPI_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_TASKS_REFRESH_TOKEN`, `GOOGLE_TASKS_LIST_ID`, one `GUIDDLEWARE_SECRET_<CONSUMER>` per consumer — kept in `tools/.env` (gitignored). Also needs `tools/service-account-key.json` (gitignored) for Google Calendar auth, same file Guimail used to hold.
 
-- `SPLITWISE_FRIENDS` — minified JSON array of `{id, name, nickname}`; source of truth is `functions/scripts/friends.json` (gitignored, moved here from Guimail); run `npm run friends` to update `.env`; names are indexed by first name, full name, and each nickname token (split on spaces)
+- `SPLITWISE_FRIENDS` — minified JSON array of `{id, name, nickname}`; source of truth is `tools/scripts/friends.json` (gitignored, moved here from Guimail); run `npm run friends` to update `.env`; names are indexed by first name, full name, and each nickname token (split on spaces)
 - `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`/`GOOGLE_TASKS_REFRESH_TOKEN`/`GOOGLE_TASKS_LIST_ID` — see `scripts/tasks-setup.md` for how to obtain each; `scripts/getGoogleOAuthToken.js` and `scripts/listGoogleTaskLists.js` are one-off local scripts, not deployed with the function
 
 ## Local testing

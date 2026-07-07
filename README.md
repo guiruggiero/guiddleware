@@ -7,7 +7,7 @@ Shared backend middleware for [Guimail](https://github.com/guiruggiero/guimail),
 
 Three independently-deployed pieces:
 
-#### Firebase Cloud Function (`functions/`)
+#### Firebase Cloud Function (`tools/`, deployed as the `guiddleware` function — folder name and deploy name are independent)
 - Splitwise: create expenses (solo, equal split, uneven split, group), list friends, list groups
 - Google Calendar: create events, per-calendar routing
 - FlightAware: resolve an IATA flight number to a live-tracking link
@@ -24,7 +24,7 @@ Three independently-deployed pieces:
 - Deploys independently via `wrangler` to Cloudflare's edge
 
 ### 📦 Dependencies
-- `express` - internal path routing for `functions/`
+- `express` - internal path routing for `tools/`
 - `axios` and `axios-retry` - API communication with retry logic
 - `googleapis` - Google Calendar, Sheets-adjacent auth, and Tasks (OAuth2) integration
 - `@sentry/node` - error tracking and monitoring
