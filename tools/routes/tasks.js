@@ -5,9 +5,7 @@ import {getTasksClient} from "../utils/googleTasks.js";
 
 const router = Router();
 
-// Google Tasks only supports date granularity for `due` — the time-of-day
-// portion is silently discarded by the API, so a bare date is normalized
-// to midnight UTC rather than pretending a time can be set
+// Google Tasks silently discards time-of-day, so `due` is date-only
 const toDueTimestamp = (due) =>
   due ? new Date(`${due}T00:00:00.000Z`).toISOString() : undefined;
 

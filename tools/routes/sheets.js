@@ -5,10 +5,7 @@ import {getSheetsClient} from "../utils/googleSheets.js";
 
 const router = Router();
 
-// POST /sheets/values — batch-writes cell ranges to any spreadsheet the
-// service account has access to. There's no "the one spreadsheet" the way
-// there's one Splitwise account or two calendars, so callers say which
-// spreadsheet and which cells — this route has no spreadsheet-specific logic
+// No hardcoded spreadsheet (unlike Splitwise/Calendar) — caller picks one
 router.post("/values", async (req, res) => {
   const {spreadsheetId, data} = req.body;
   if (!spreadsheetId || !Array.isArray(data) || data.length === 0) {

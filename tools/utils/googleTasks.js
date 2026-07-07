@@ -1,9 +1,7 @@
 // Imports
 import {google} from "googleapis";
 
-// Promise-cached Google Tasks client. Uses OAuth2 with a refresh token,
-// not the shared service account used for Calendar/Sheets — personal Task
-// lists have no sharing/ACL mechanism to grant the service account access.
+// OAuth2, not the shared service account — Task lists have no ACL to grant it
 let clientPromise;
 export const getTasksClient = () => {
   if (!clientPromise) {
