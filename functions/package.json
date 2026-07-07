@@ -26,6 +26,7 @@
   "scripts": {
     "lint": "eslint .",
     "lint-fix": "eslint . --fix",
-    "deploy": "npx firebase deploy --only functions:guiddleware"
+    "deploy": "npx firebase deploy --only functions:guiddleware",
+    "friends": "node scripts/friends.js"
   }
 }

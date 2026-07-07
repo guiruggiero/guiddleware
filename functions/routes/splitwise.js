@@ -31,7 +31,7 @@ router.post("/expenses", async (req, res) => {
       .json({error: "Missing description, amount, or currency"});
   }
 
-  const fullDetails = [details, source && `Created via ${source}`]
+  const fullDetails = [details, source && `Created with ${source}`]
     .filter(Boolean).join("\n\n");
   const names = (splitWith ?? []).map((n) => n.toLowerCase());
   const hasOwedAmounts = owedAmounts?.length > 0;

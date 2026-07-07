@@ -6,7 +6,7 @@ Firebase Cloud Function (`functions/index.js`). Single exported function `guiddl
 
 ## Routes
 
-- `POST /splitwise/expenses` — creates a Splitwise expense; consolidates the union of what Guimail, GuiDo, and Guiwise each used to implement separately (solo, equal split, uneven split, group). Accepts `{description, amount, currency, details?, date?, splitWith?, paidBy?, owedAmounts?, groupId?, source?}`. Falls back to a solo expense (with a note) if a name can't be resolved or uneven `owedAmounts` don't sum to `amount`. `source` is appended to the expense details as "Created via `<source>`" — formatting/attribution stays the caller's choice, this just threads it through.
+- `POST /splitwise/expenses` — creates a Splitwise expense; consolidates the union of what Guimail, GuiDo, and Guiwise each used to implement separately (solo, equal split, uneven split, group). Accepts `{description, amount, currency, details?, date?, splitWith?, paidBy?, owedAmounts?, groupId?, source?}`. Falls back to a solo expense (with a note) if a name can't be resolved or uneven `owedAmounts` don't sum to `amount`. `source` is appended to the expense details as "Created with `<source>`" — formatting/attribution stays the caller's choice, this just threads it through.
 - `GET /splitwise/friends` — returns the parsed `SPLITWISE_FRIENDS` list (`{id, name, nickname}[]`) for callers building a friend picker.
 - `GET /splitwise/groups` — returns the user's Splitwise groups (`{id, name}[]`) for callers building a group picker.
 - `POST /calendar/events` — creates a Google Calendar event; accepts `{summary, start, end, timeZone?, location?, description?, calendar?: "default"|"shared", reminders?, isSpecialProject?}`. All-day vs timed is inferred from whether `start` contains `T`.
@@ -24,7 +24,9 @@ Each in `functions/utils/`, ported/consolidated from Guimail's equivalents (`axi
 
 ## Required env vars
 
-`SENTRY_DSN`, `SPLITWISE_API_KEY`, `SPLITWISE_FRIENDS`, `SPLITWISE_ID_GUI`, `SPLITWISE_ID_GEORGIA`, `GOOGLE_CAL_DEFAULT_ID`, `GOOGLE_CAL_SHARED_ID`, `FLIGHTAWARE_AEROAPI_KEY`, one `GUIDDLEWARE_SECRET_<CONSUMER>` per consumer — kept in `functions/.env` (gitignored). Also needs `functions/service-account-key.json` (gitignored) for Google Calendar auth, same file Guimail uses.
+`SENTRY_DSN`, `SPLITWISE_API_KEY`, `SPLITWISE_FRIENDS`, `SPLITWISE_ID_GUI`, `SPLITWISE_ID_GEORGIA`, `GOOGLE_CAL_DEFAULT_ID`, `GOOGLE_CAL_SHARED_ID`, `FLIGHTAWARE_AEROAPI_KEY`, one `GUIDDLEWARE_SECRET_<CONSUMER>` per consumer — kept in `functions/.env` (gitignored). Also needs `functions/service-account-key.json` (gitignored) for Google Calendar auth, same file Guimail used to hold.
+
+- `SPLITWISE_FRIENDS` — minified JSON array of `{id, name, nickname}`; source of truth is `functions/scripts/friends.json` (gitignored, moved here from Guimail); run `npm run friends` to update `.env`; names are indexed by first name, full name, and each nickname token (split on spaces)
 
 ## Local testing
 
