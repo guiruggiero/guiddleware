@@ -1,0 +1,23 @@
+{
+  "name": "whatsapp-router",
+  "author": "Gui Ruggiero",
+  "homepage": "https://guiruggiero.com/",
+  "version": "1.0",
+  "type": "module",
+  "main": "src/index.js",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.9.0",
+    "eslint": "^10.5.0",
+    "globals": "^17.6.0",
+    "wrangler": "^4.107.0"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "lint-fix": "eslint . --fix",
+    "update": "npm i -D wrangler@latest",
+    "whoami": "npx wrangler whoami",
+    "secret": "npx wrangler secret put/delete <SECRET_NAME>",
+    "deploy": "npx wrangler deploy"
+  }
+}
