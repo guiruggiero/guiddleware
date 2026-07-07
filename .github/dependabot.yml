@@ -1,0 +1,25 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directories:
+      - /functions
+      - /claude-code
+      - /whatsapp-router
+    schedule:
+      interval: weekly
+      day: saturday
+      time: "00:00"
+      timezone: America/Los_Angeles
+    groups:
+      version:
+        update-types:
+          - patch
+          - minor
+          - major
+      security:
+        applies-to: security-updates
+        update-types:
+          - patch
+          - minor
+          - major
