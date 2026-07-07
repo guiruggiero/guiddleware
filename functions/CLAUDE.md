@@ -2,6 +2,8 @@
 
 Firebase Cloud Function (`functions/index.js`). Single exported function `guiddleware`, wrapping an Express app so every route below is one deployed function/URL with real internal path routing — not one Cloud Function per capability (contrast with `guipt`/`guiwise` in the `website` repo, which are separate functions). Deployed into the shared `guiruggiero` Firebase project, alongside Guimail's `guimail` function and the website's `guipt`/`guiwise`.
 
+**URL**: `https://us-central1-guiruggiero.cloudfunctions.net/guiddleware` — same stable `cloudfunctions.net` shape as `guimail`/`guipt`/`guiwise`. `firebase deploy` prints a `*.run.app` URL after deploying (the underlying Cloud Run revision) — ignore that one, it's not what callers should use.
+
 ## Routes
 
 - `POST /splitwise/expenses` — creates a Splitwise expense; consolidates the union of what Guimail, GuiDo, and Guiwise each used to implement separately (solo, equal split, uneven split, group). Accepts `{description, amount, currency, details?, date?, splitWith?, paidBy?, owedAmounts?, groupId?, source?}`. Falls back to a solo expense (with a note) if a name can't be resolved or uneven `owedAmounts` don't sum to `amount`. `source` is appended to the expense details as "Created via `<source>`" — formatting/attribution stays the caller's choice, this just threads it through.
