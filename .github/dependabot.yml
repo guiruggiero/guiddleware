@@ -3,7 +3,7 @@ version: 2
 updates:
   - package-ecosystem: npm
     directories:
-      - /functions
+      - /tools
       - /claude-code
       - /whatsapp-router
     schedule:
