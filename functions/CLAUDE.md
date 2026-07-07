@@ -14,6 +14,8 @@ Firebase Cloud Function (`functions/index.js`). Single exported function `guiddl
 
 Each route requires `Authorization: Bearer <token>`, validated in `auth.js` against any env var named `GUIDDLEWARE_SECRET_<CONSUMER>` (e.g. `GUIDDLEWARE_SECRET_GUIMAIL`). The matched consumer name is tagged on Sentry events (`req.consumer`) for attribution, not used for branching logic.
 
+`index.js` sets `invoker: "public"` on the function — v2 Cloud Functions default to requiring an IAM `roles/run.invoker` grant on the caller, which would 401 every request before it even reaches Express. Access control here is meant to be the bearer-token check above, not IAM, so the invoker is deliberately public.
+
 ## Utilities
 
 Each in `functions/utils/`, ported/consolidated from Guimail's equivalents (`axiosClient.js`, `googleAuth.js`, `googleCalendar.js`, `flightAware.js` are unchanged; `splitwise.js` is the consolidated version, with an optional `groupId` threaded through every expense creator and `getFriendsList`/`getGroups` added for picker UIs).
@@ -24,7 +26,7 @@ Each in `functions/utils/`, ported/consolidated from Guimail's equivalents (`axi
 
 ## Local testing
 
-`firebase-admin` is a devDependency solely because the Firebase emulator (`npx firebase emulators:start --only functions`) refuses to load without it present in `node_modules`, even though nothing in this codebase uses it — it's excluded from the deployed bundle (`firebase deploy` only installs `dependencies`, not `devDependencies`).
+The Firebase emulator (`npx firebase emulators:start --only functions`) refuses to load without `firebase-admin` present in `node_modules`, even though nothing in this codebase uses it. Don't add it to `package.json` (dev or prod) — Cloud Build installs the full `node_modules` tree (devDependencies included) before deploying, and `firebase-admin@14` conflicts with `firebase-functions@7`'s peer requirement (`^11 || ^12 || ^13`), which fails the deploy with `ERESOLVE`. If you need the emulator locally, `npm install firebase-admin` transiently and uninstall it again before deploying/committing.
 
 ## Deploy
 

@@ -22,5 +22,7 @@ app.use("/splitwise", splitwiseRouter);
 app.use("/calendar", calendarRouter);
 app.use("/flightaware", flightAwareRouter);
 
+// invoker: "public" allows unauthenticated invocations at the IAM layer;
+// the actual access control is the bearer-token check in auth.js
 export const guiddleware = onRequest(
-  {maxInstances: 5, timeoutSeconds: 30}, app);
+  {maxInstances: 5, timeoutSeconds: 30, invoker: "public"}, app);
