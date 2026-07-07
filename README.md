@@ -1,7 +1,7 @@
 [![CodeQL](https://github.com/guiruggiero/guiddleware/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/guiruggiero/guiddleware/actions/workflows/github-code-scanning/codeql)
 [![Dependencies](https://github.com/guiruggiero/guiddleware/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/guiruggiero/guiddleware/actions/workflows/dependabot/dependabot-updates)
 
-Shared backend middleware for [Guimail](https://github.com/guiruggiero/guimail), [GuiDo](https://github.com/guiruggiero/guido), and Guiwise (part of [website](https://github.com/guiruggiero/website)) — one place for Splitwise, Google Calendar, FlightAware, Google Tasks, and Claude Code integrations, instead of each interface hand-rolling its own.
+Shared backend middleware for [Guimail](https://github.com/guiruggiero/guimail), [GuiDo](https://github.com/guiruggiero/guido), and Guiwise (part of [website](https://github.com/guiruggiero/website)) — one place for Splitwise, Google Calendar, FlightAware, Google Tasks, Google Sheets, and Claude Code integrations, instead of each interface hand-rolling its own.
 
 ### 🏗️ Architecture
 
@@ -12,6 +12,7 @@ Three independently-deployed pieces:
 - Google Calendar: create events, per-calendar routing
 - FlightAware: resolve an IATA flight number to a live-tracking link
 - Google Tasks: create/list/complete to-do items (OAuth2, since personal task lists have no service-account sharing mechanism)
+- Google Sheets: batch-write cell ranges to any spreadsheet the service account can access; no hardcoded spreadsheet, callers say which one
 - One Cloud Function wrapping an Express app (real internal path routing), deployed into the same shared Firebase project as Guimail's and the website's own functions
 - Per-consumer bearer token auth; each caller is tagged for attribution, never for branching logic
 
@@ -26,7 +27,7 @@ Three independently-deployed pieces:
 ### 📦 Dependencies
 - `express` - internal path routing for `tools/`
 - `axios` and `axios-retry` - API communication with retry logic
-- `googleapis` - Google Calendar, Sheets-adjacent auth, and Tasks (OAuth2) integration
+- `googleapis` - Google Calendar, Sheets, and Tasks (OAuth2) integration
 - `@sentry/node` - error tracking and monitoring
 - `firebase-functions` and `firebase-tools` - serverless backend and deployment
 - `helmet` - HTTP header security (`claude-code/`)

@@ -14,6 +14,7 @@ Firebase Cloud Function (`tools/index.js`). Single exported function `guiddlewar
 - `POST /tasks` — creates a Google Task; accepts `{title, notes?, due?, taskListId?}` (`taskListId` defaults to `GOOGLE_TASKS_LIST_ID`). `due` is date-only (`YYYY-MM-DD`) — the Google Tasks API silently discards any time-of-day, so the route doesn't pretend otherwise.
 - `GET /tasks` — lists tasks on a list (`taskListId?`, `showCompleted?`, both optional query params); returns `{id, title, notes, due, status}[]`.
 - `PATCH /tasks/:id` — updates a task's status (defaults to marking it `"completed"`; accepts `{status?, taskListId?}`).
+- `POST /sheets/values` — batch-writes cell ranges to a spreadsheet; accepts `{spreadsheetId, data: [{range, values}]}` (same shape as the Sheets API's own `batchUpdate`, `valueInputOption` fixed to `"USER_ENTERED"`). Unlike every other route here, there's no hardcoded/default spreadsheet — callers always say which one, since (unlike Splitwise/Calendar) there's no single spreadsheet every consumer shares.
 
 ## Auth
 
@@ -23,7 +24,7 @@ Each route requires `Authorization: Bearer <token>`, validated in `auth.js` agai
 
 ## Utilities
 
-Each in `tools/utils/`, ported/consolidated from Guimail's equivalents (`axiosClient.js`, `googleAuth.js`, `googleCalendar.js`, `flightAware.js` are unchanged; `splitwise.js` is the consolidated version, with an optional `groupId` threaded through every expense creator and `getFriendsList`/`getGroups` added for picker UIs).
+Each in `tools/utils/`, ported/consolidated from Guimail's equivalents (`axiosClient.js`, `googleAuth.js`, `googleCalendar.js`, `flightAware.js`, `googleSheets.js` are unchanged; `splitwise.js` is the consolidated version, with an optional `groupId` threaded through every expense creator and `getFriendsList`/`getGroups` added for picker UIs).
 
 `googleTasks.js` is net new and deliberately doesn't reuse `googleAuth.js`'s service-account factory — personal Google Task lists have no sharing/ACL mechanism, so the service account can't be granted access. It authenticates via OAuth2 with a refresh token instead. See `scripts/tasks-setup.md` for the one-time manual setup (this part requires Gui's own browser/Google login — it can't be scripted end-to-end).
 
