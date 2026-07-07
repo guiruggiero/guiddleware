@@ -10,7 +10,7 @@
     "@stylistic/eslint-plugin": "^5.9.0",
     "eslint": "^10.5.0",
     "globals": "^17.6.0",
-    "wrangler": "^4.107.0"
+    "wrangler": "^4.107.1"
   },
   "scripts": {
     "lint": "eslint .",
