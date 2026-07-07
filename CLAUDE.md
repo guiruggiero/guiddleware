@@ -11,3 +11,6 @@ This repo holds multiple independently-deployed pieces, each with its own deploy
 ## Consumers
 
 Each consumer (Guimail, GuiDo, Guiwise, future webhooks) authenticates with its own per-consumer bearer token, issued separately for `claude-code` and for `functions/`.
+
+- **Guimail** calls `functions/` directly from its own Cloud Function (server-to-server, no browser involved) — see `guimail/functions/utils/guiddleware.js`.
+- **Guiwise** does *not* call `functions/` directly, even though its own UI is a browser: the `website` repo is public, so its bearer token can't live in committed frontend JS. Guiwise's own Cloud Function (`guiwise.js`, in the `website` repo) holds the `GUIDDLEWARE_SECRET_GUIWISE` token server-side and proxies for the browser instead.
