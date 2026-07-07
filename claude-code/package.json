@@ -1,5 +1,5 @@
 {
-    "name": "claude-gateway",
+    "name": "claude-code",
     "author": "Gui Ruggiero",
     "homepage": "https://guiruggiero.com/",
 	"version": "1.0",
@@ -20,7 +20,7 @@
         "lint": "eslint .",
         "lint-fix": "eslint . --fix",
         "start": "node --env-file=.env index.js",
-        "pm2": "pm2 restart claudeCodeGateway",
-        "pm2-config": "pm2 stop all && pm2 delete claudeCodeGateway && pm2 start pm2.config.js && pm2 save"
+        "pm2": "pm2 restart claudeCode",
+        "pm2-config": "pm2 stop all && pm2 delete claudeCode && pm2 start pm2.config.js && pm2 save"
     }
 }

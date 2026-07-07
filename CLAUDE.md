@@ -4,10 +4,10 @@ Shared backend middleware for Guimail, GuiDo, and Guiwise (and future consumers 
 
 This repo holds multiple independently-deployed pieces, each with its own deploy target:
 
-- `claude-gateway/` — Express server that spawns `claude -p` as a child process. Deploys and runs on code-server specifically (needs simultaneous access to all repos), via PM2. See `claude-gateway/CLAUDE.md`.
+- `claude-code/` — Express server that spawns `claude -p` as a child process. Deploys and runs on code-server specifically (needs simultaneous access to all repos), via PM2. See `claude-code/CLAUDE.md`.
 - `functions/` — Firebase Cloud Function (Splitwise, Calendar, FlightAware). Not yet built.
 - `whatsapp-router/` — Cloudflare Worker routing WhatsApp webhooks. Not yet relocated here.
 
 ## Consumers
 
-Each consumer (Guimail, GuiDo, Guiwise, future webhooks) authenticates with its own per-consumer bearer token, issued separately for `claude-gateway` and for the Cloud Function once it exists.
+Each consumer (Guimail, GuiDo, Guiwise, future webhooks) authenticates with its own per-consumer bearer token, issued separately for `claude-code` and for the Cloud Function once it exists.
