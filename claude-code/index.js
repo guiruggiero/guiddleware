@@ -3,9 +3,11 @@ import * as Sentry from "@sentry/node";
 import {homedir} from "node:os";
 import express from "express";
 import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import {authenticate} from "./auth.js";
 import {spawn} from "node:child_process";
 
-// Instrument error tracking
+// Initialization
 Sentry.init({
     dsn: process.env.SENTRY_DSN,
     sendDefaultPii: true,
@@ -15,41 +17,32 @@ Sentry.init({
 
 // Configuration
 const TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
-const SECRET_PREFIX = "CLAUDE_CODE_GATEWAY_SECRET_";
 
-// Per-consumer bearer tokens, one env var per consumer (e.g. CLAUDE_CODE_GATEWAY_SECRET_GUIMAIL)
-const consumerBySecret = new Map();
-for (const [key, value] of Object.entries(process.env)) {
-    if (key.startsWith(SECRET_PREFIX) && value) {
-        consumerBySecret.set(value, key.slice(SECRET_PREFIX.length).toLowerCase());
-    }
-}
+// Rate limiter
+const gatewayRateLimit = rateLimit({
+    limit: 3,
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => req.consumer, // Caps requests per consumer
+    handler: (req, res) => res.status(429).send("Too many requests"),
+});
 
-// Initialize server and middleware
+// Express app
 const app = express();
 app.use(express.json({limit: "5mb"})); // POST request parser with size limit
 app.use(helmet()); // HTTP header security
+app.use(authenticate);
+app.use(gatewayRateLimit);
 
 let activeRequests = 0;
-const MAX_CONCURRENCY = 3;
+const MAX_CONCURRENCY = 2;
 
 // Run Claude Code endpoint
 app.post(process.env.CLAUDE_CODE_GATEWAY_PATH, async (req, res) => {
     Sentry.logger.info("[8b] Gateway: started");
 
-    // Validate message signature, identify the calling consumer
-    const authHeader = req.headers.authorization;
-    const signature = authHeader?.split(" ")[1];
-    const consumer = signature && consumerBySecret.get(signature);
-    if (!authHeader || !consumer) {
-        Sentry.logger.warn("Gateway: unauthorized request", {
-            authHeaderPresent: !!authHeader,
-            reason: authHeader ? "Invalid signature" : "No signature",
-        });
-
-        return res.status(401).send("Unauthorized");
-    }
-    Sentry.setTag("consumer", consumer);
+    const consumer = req.consumer;
 
     // Validate prompt
     const {prompt, sessionId, resumePrompt} = req.body;

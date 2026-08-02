@@ -4,8 +4,9 @@ Claude Code Gateway (`claude-code/index.js`). Express server that spawns `claude
 
 ## Behavior
 
-- Authenticates via a per-consumer bearer token: any env var named `CLAUDE_CODE_GATEWAY_SECRET_<CONSUMER>` (e.g. `CLAUDE_CODE_GATEWAY_SECRET_GUIMAIL`) is a valid token for that consumer; the matched consumer name is tagged on Sentry events and included in logs for attribution. Each consumer gets its own token so any one can be rotated/revoked independently.
-- Enforces a 3-minute timeout and `MAX_CONCURRENCY = 3`
+- Authenticates via a per-consumer bearer token, in `auth.js`: any env var named `CLAUDE_CODE_GATEWAY_SECRET_<CONSUMER>` (e.g. `CLAUDE_CODE_GATEWAY_SECRET_GUIMAIL`) is a valid token for that consumer; the matched consumer name is tagged on Sentry events and included in logs for attribution. Each consumer gets its own token so any one can be rotated/revoked independently.
+- Rate-limited to 3 requests per 10 minutes per consumer (`express-rate-limit`, keyed off the identity `auth.js` resolves)
+- Enforces a 3-minute timeout and `MAX_CONCURRENCY = 2`
 - Sends `process.send("ready")` for PM2 readiness detection
 - 5mb request body limit
 

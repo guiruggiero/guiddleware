@@ -22,6 +22,8 @@ Each route requires `Authorization: Bearer <token>`, validated in `auth.js` agai
 
 `index.js` sets `invoker: "public"` on the function — v2 Cloud Functions default to requiring an IAM `roles/run.invoker` grant on the caller, which would 401 every request before it even reaches Express. Access control here is meant to be the bearer-token check above, not IAM, so the invoker is deliberately public.
 
+Rate-limited to 10 requests per 10 minutes per consumer (`express-rate-limit`, keyed off `req.consumer`, applied after `authenticate` in `index.js`). `helmet()` is also applied for HTTP header security (e.g. disabling `X-Powered-By`).
+
 ## Utilities
 
 Each in `tools/utils/`, ported/consolidated from Guimail's equivalents (`axiosClient.js`, `googleAuth.js`, `googleCalendar.js`, `flightAware.js`, `googleSheets.js` are unchanged; `splitwise.js` is the consolidated version, with an optional `groupId` threaded through every expense creator and `getFriendsList`/`getGroups` added for picker UIs).

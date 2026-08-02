@@ -2,12 +2,13 @@
     "name": "claude-code",
     "author": "Gui Ruggiero",
     "homepage": "https://guiruggiero.com/",
-	"version": "1.0",
+    "version": "1.0",
     "type": "module",
     "main": "index.js",
     "dependencies": {
         "@sentry/node": "^10.68.0",
         "express": "^5.2.1",
+        "express-rate-limit": "^8.6.1",
         "helmet": "^8.2.0"
     },
     "devDependencies": {

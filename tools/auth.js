@@ -1,10 +1,10 @@
 // Import
 import * as Sentry from "@sentry/node";
 
+// Initialization
 const SECRET_PREFIX = "GUIDDLEWARE_SECRET_";
 
 // Per-consumer bearer tokens, one env var per consumer
-// (e.g. GUIDDLEWARE_SECRET_GUIMAIL)
 const consumerBySecret = new Map();
 for (const [key, value] of Object.entries(process.env)) {
   if (key.startsWith(SECRET_PREFIX) && value) {
