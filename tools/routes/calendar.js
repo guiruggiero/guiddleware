@@ -21,6 +21,12 @@ router.post("/events", async (req, res) => {
   if (!summary || !start || !end) {
     return res.status(400).json({error: "Missing summary, start, or end"});
   }
+  if (typeof start !== "string" || typeof end !== "string") {
+    return res.status(400).json({error: "start and end must be strings"});
+  }
+  if (reminders !== undefined && !Array.isArray(reminders)) {
+    return res.status(400).json({error: "reminders must be an array"});
+  }
   const calendarId = CALENDARS[calendarKey];
   if (!calendarId) {
     return res.status(400).json({error: `Unknown calendar: ${calendarKey}`});

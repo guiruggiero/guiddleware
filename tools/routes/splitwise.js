@@ -30,6 +30,19 @@ router.post("/expenses", async (req, res) => {
     return res.status(400)
       .json({error: "Missing description, amount, or currency"});
   }
+  if (splitWith !== undefined && !Array.isArray(splitWith)) {
+    return res.status(400).json({error: "splitWith must be an array"});
+  }
+  if (paidBy !== undefined && typeof paidBy !== "string") {
+    return res.status(400).json({error: "paidBy must be a string"});
+  }
+  const isValidShare = (s) =>
+    typeof s?.name === "string" && typeof s?.owed === "number";
+  if (owedAmounts !== undefined &&
+    (!Array.isArray(owedAmounts) || !owedAmounts.every(isValidShare))) {
+    return res.status(400)
+      .json({error: "owedAmounts must be an array of {name, owed}"});
+  }
 
   const fullDetails = [details, source && `Created with ${source}`]
     .filter(Boolean).join("\n\n");
