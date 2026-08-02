@@ -15,10 +15,12 @@ Three independently-deployed pieces:
 - Google Sheets: batch-write cell ranges to any spreadsheet the service account can access; no hardcoded spreadsheet, callers say which one
 - One Cloud Function wrapping an Express app (real internal path routing), deployed into the same shared Firebase project as Guimail's and the website's own functions
 - Per-consumer bearer token auth; each caller is tagged for attribution, never for branching logic
+- Rate-limited per consumer; `helmet` for HTTP header security
 
 #### Claude Code Gateway (`claude-code/`)
 - Spawns `claude -p` as a child process, exposed over HTTP
 - Runs on code-server specifically via PM2 (the only piece that needs simultaneous access to all repos) — everything else in this repo deploys elsewhere
+- Per-consumer bearer token auth and rate limiting, same shape as `tools/`; `helmet` for HTTP header security
 
 #### WhatsApp Router (`whatsapp-router/`)
 - Cloudflare Worker routing incoming WhatsApp webhooks to Agendadô or GuiDo, with local-dev (ngrok) routing for the developer's own number
@@ -30,7 +32,8 @@ Three independently-deployed pieces:
 - `googleapis` - Google Calendar, Sheets, and Tasks (OAuth2) integration
 - `@sentry/node` - error tracking and monitoring
 - `firebase-functions` and `firebase-tools` - serverless backend and deployment
-- `helmet` - HTTP header security (`claude-code/`)
+- `helmet` - HTTP header security
+- `express-rate-limit` - per-consumer request rate limiting
 - `eslint` and `stylistic`/`eslint-config-google` - code linting
 - `wrangler` - Cloudflare Worker deployment (`whatsapp-router/`)
 
