@@ -5,6 +5,9 @@
   "version": "1.0",
   "type": "module",
   "main": "src/index.js",
+  "dependencies": {
+    "@sentry/cloudflare": "^10.69.0"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@stylistic/eslint-plugin": "^5.9.0",

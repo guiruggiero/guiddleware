@@ -21,5 +21,6 @@ All managed as Cloudflare secrets via `wrangler secret put`:
 - `PHONE_NUMBER` — developer phone number for dev routing
 - `RUNTIME_BASE_URL` — production backend URL
 - `NGROK_BASE_URL` — local dev tunnel URL
+- `SENTRY_DSN` — shared `guiddleware` Sentry project (same one `claude-code/` and `tools/` report to)
 
-The worker has no production dependencies — it uses only native Cloudflare/Web APIs (`fetch`, `URL`, `Request`, `Response`, `AbortController`).
+The worker's own routing logic uses only native Cloudflare/Web APIs (`fetch`, `URL`, `Request`, `Response`, `AbortController`); `@sentry/cloudflare` (`Sentry.withSentry` wrapping the `fetch` handler) is its only production dependency, added for error tracking.
