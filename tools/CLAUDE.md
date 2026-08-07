@@ -43,7 +43,7 @@ Each in `tools/utils/`, ported/consolidated from Guimail's equivalents. `axiosCl
 
 Settle Up group/permission/member creation can't be scripted over REST — security rules reject those writes (and even reads) outside the app itself, confirmed by testing. See `scripts/settleup-setup.md`. Two groups exist: household (Gui + Georgia) and personal (Gui only, mirrors Splitwise's groupless/personal bucket — Settle Up has no such concept, every transaction belongs to a group).
 
-`googleTasks.js` authenticates via OAuth2 with a refresh token, not `googleAuth.js`'s service account — personal Task lists have no ACL to grant it. See `scripts/tasks-setup.md`.
+`googleTasks.js` authenticates via OAuth2 with a refresh token, not `googleAuth.js`'s service account — personal Task lists have no ACL to grant it. OAuth setup is done and live; `getGoogleOAuthToken.js` can regenerate a refresh token if it's ever revoked.
 
 ## Required env vars
 
@@ -54,7 +54,7 @@ Settle Up group/permission/member creation can't be scripted over REST — secur
 - `SETTLEUP_BOT_EMAIL`/`SETTLEUP_BOT_PASSWORD` — dedicated bot credentials, created manually; see `scripts/settleup-setup.md`
 - `SETTLEUP_GROUP_ID_HOUSEHOLD`/`SETTLEUP_GROUP_ID_PERSONAL` — the bot needs read/write permission (level `20`) on each, granted via the app
 - `SETTLEUP_MEMBER_ID_GUI_HOUSEHOLD`/`SETTLEUP_MEMBER_ID_GEORGIA_HOUSEHOLD`/`SETTLEUP_MEMBER_ID_GUI_PERSONAL` — per-group IDs (Gui's ID differs between groups); found via `node --env-file=.env scripts/settleUpDiscover.js`
-- `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`/`GOOGLE_TASKS_REFRESH_TOKEN`/`GOOGLE_TASKS_LIST_ID` — see `scripts/tasks-setup.md`; `getGoogleOAuthToken.js`/`listGoogleTaskLists.js` are one-off local scripts, not deployed
+- `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`/`GOOGLE_TASKS_REFRESH_TOKEN`/`GOOGLE_TASKS_LIST_ID` — OAuth Desktop client in the `guiruggiero` GCP project, consent screen published to "In production" (no fixed token expiry); `getGoogleOAuthToken.js`/`listGoogleTaskLists.js` are one-off local scripts, not deployed
 
 ## Local testing
 
