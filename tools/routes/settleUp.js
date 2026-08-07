@@ -31,7 +31,8 @@ router.post("/expenses", async (req, res) => {
       .json({error: "paidBy must be \"gui\" or \"georgia\""});
   }
   const isEqualSplit = split === "equal";
-  const isExactSplit = split !== undefined && typeof split === "object";
+  const isExactSplit = split !== undefined && typeof split === "object" &&
+    split !== null && !Array.isArray(split);
   if (split !== undefined && !isEqualSplit && !isExactSplit) {
     return res.status(400)
       .json({error: "split must be \"equal\" or {gui, georgia}"});
