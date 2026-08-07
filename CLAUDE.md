@@ -15,3 +15,7 @@ Each consumer (Guimail, GuiDo, Guiwise, future webhooks) authenticates with its 
 - **Guimail** calls `tools/` directly from its own Cloud Function (server-to-server, no browser involved) — see `guimail/agent/utils/guiddleware.js`.
 - **Guiwise** does *not* call `tools/` directly, even though its own UI is a browser: the `website` repo is public, so its bearer token can't live in committed frontend JS. Guiwise's own Cloud Function (`guiwise.js`, in the `website` repo) holds the `GUIDDLEWARE_SECRET_GUIWISE` token server-side and proxies for the browser instead.
 - **GuiDo** calls `tools/` directly from its own Express server (server-to-server) — see `guido/src/utils/guiddleware.js`. Covers Google Tasks, Splitwise, and Calendar.
+
+## SonarQube Cloud
+
+Project key `guiruggiero_guiddleware`.
