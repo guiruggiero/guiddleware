@@ -25,6 +25,9 @@
     "firebase-tools": "^15.24.0",
     "globals": "^17.8.0"
   },
+  "overrides": {
+    "uuid": ">=12.0.1"
+  },
   "scripts": {
     "lint": "eslint .",
     "lint-fix": "eslint . --fix",
