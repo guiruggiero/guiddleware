@@ -6,40 +6,59 @@ Firebase Cloud Function (`tools/index.js`). Single exported function `guiddlewar
 
 ## Routes
 
-- `POST /splitwise/expenses` — creates a Splitwise expense; consolidates the union of what Guimail, GuiDo, and Guiwise each used to implement separately (solo, equal split, uneven split, group). Accepts `{description, amount, currency, details?, date?, splitWith?, paidBy?, owedAmounts?, groupId?, source?}`. Falls back to a solo expense (with a note) if a name can't be resolved or uneven `owedAmounts` don't sum to `amount`. `source` is appended to the expense details as "Created with `<source>`" — formatting/attribution stays the caller's choice, this just threads it through.
-- `GET /splitwise/friends` — returns the parsed `SPLITWISE_FRIENDS` list (`{id, name, nickname}[]`) for callers building a friend picker.
-- `GET /splitwise/groups` — returns the user's Splitwise groups (`{id, name}[]`) for callers building a group picker.
+- `POST /splitwise/expenses` — **being migrated off, see below**. Creates a Splitwise expense; consolidates solo/equal/uneven/group logic Guimail, GuiDo, and Guiwise each used to implement separately. Accepts `{description, amount, currency, details?, date?, splitWith?, paidBy?, owedAmounts?, groupId?, source?}`. Falls back to a solo expense (with a note) if a name can't be resolved or `owedAmounts` don't sum to `amount`.
+- `GET /splitwise/friends` — parsed `SPLITWISE_FRIENDS` list (`{id, name, nickname}[]`), for a friend picker.
+- `GET /splitwise/groups` — user's Splitwise groups (`{id, name}[]`), for a group picker.
+- `POST /settleup/expenses` — Settle Up replacement for `/splitwise/expenses` (Splitwise started charging for API usage). Not interface-compatible, and not general-purpose: scoped to exactly two fixed people (Gui, Georgia) and two fixed groups, no arbitrary friends. Accepts `{description, amount, currency, details?, date?, split?, paidBy?, category?, source?}`.
+  - `split` omitted → solo expense in the personal group (Gui only)
+  - `split: "equal"` → 50/50 in the household group
+  - `split: {gui, georgia}` → exact amounts in the household group, must sum to `amount`
+  - `paidBy` (`"gui"` default or `"georgia"`) only applies when `split` is set
+  - Returns `{expense: {id}}`
 - `POST /calendar/events` — creates a Google Calendar event; accepts `{summary, start, end, timeZone?, location?, description?, calendar?: "default"|"shared", reminders?, isSpecialProject?}`. All-day vs timed is inferred from whether `start` contains `T`.
-- `GET /flightaware/track?flightNumber=<IATA>` — resolves an IATA flight number to a live-tracking URL, or `{url: null}` if not found. Composition (building a calendar description that embeds this link) is the caller's job — callers call this first, then `/calendar/events` — not handled server-side, to keep `/calendar/events` generic for callers that don't care about flights.
-- `POST /tasks` — creates a Google Task; accepts `{title, notes?, due?, taskListId?}` (`taskListId` defaults to `GOOGLE_TASKS_LIST_ID`). `due` is date-only (`YYYY-MM-DD`) — the Google Tasks API silently discards any time-of-day, so the route doesn't pretend otherwise.
-- `GET /tasks` — lists tasks on a list (`taskListId?`, `showCompleted?`, both optional query params); returns `{id, title, notes, due, status}[]`.
-- `PATCH /tasks/:id` — updates a task's status (defaults to marking it `"completed"`; accepts `{status?, taskListId?}`).
-- `POST /sheets/values` — batch-writes cell ranges to a spreadsheet; accepts `{spreadsheetId, data: [{range, values}]}` (same shape as the Sheets API's own `batchUpdate`, `valueInputOption` fixed to `"USER_ENTERED"`). Unlike every other route here, there's no hardcoded/default spreadsheet — callers always say which one, since (unlike Splitwise/Calendar) there's no single spreadsheet every consumer shares.
+- `GET /flightaware/track?flightNumber=<IATA>` — resolves an IATA flight number to a live-tracking URL, or `{url: null}`. Callers compose this with `/calendar/events` themselves.
+- `POST /tasks` — creates a Google Task; accepts `{title, notes?, due?, taskListId?}`. `due` is date-only — Google Tasks silently discards time-of-day.
+- `GET /tasks` — lists tasks (`taskListId?`, `showCompleted?`); returns `{id, title, notes, due, status}[]`.
+- `PATCH /tasks/:id` — updates a task's status (default `"completed"`); accepts `{status?, taskListId?}`.
+- `POST /sheets/values` — batch-writes cell ranges; accepts `{spreadsheetId, data: [{range, values}]}` (`valueInputOption` fixed to `"USER_ENTERED"`). No default spreadsheet — callers always specify one.
 
 ## Auth
 
-Each route requires `Authorization: Bearer <token>`, validated in `auth.js` against any env var named `GUIDDLEWARE_SECRET_<CONSUMER>` (e.g. `GUIDDLEWARE_SECRET_GUIMAIL`). The matched consumer name is tagged on Sentry events (`req.consumer`) for attribution, not used for branching logic.
+Each route requires `Authorization: Bearer <token>`, validated in `auth.js` against any env var named `GUIDDLEWARE_SECRET_<CONSUMER>`. The matched consumer is tagged on Sentry events (`req.consumer`), not used for branching.
 
-`index.js` sets `invoker: "public"` on the function — v2 Cloud Functions default to requiring an IAM `roles/run.invoker` grant on the caller, which would 401 every request before it even reaches Express. Access control here is meant to be the bearer-token check above, not IAM, so the invoker is deliberately public.
+`index.js` sets `invoker: "public"` — v2 Cloud Functions default to requiring an IAM `roles/run.invoker` grant, which would 401 before reaching Express. Access control is the bearer-token check above, not IAM.
 
-Rate-limited to 10 requests per 10 minutes per consumer (`express-rate-limit`, keyed off `req.consumer`, applied after `authenticate` in `index.js`). `helmet()` is also applied for HTTP header security (e.g. disabling `X-Powered-By`).
+Rate-limited to 10 requests per 10 minutes per consumer (`express-rate-limit`, keyed off `req.consumer`). `helmet()` disables `X-Powered-By` and other HTTP header hardening.
 
 ## Utilities
 
-Each in `tools/utils/`, ported/consolidated from Guimail's equivalents (`axiosClient.js`, `googleAuth.js`, `googleCalendar.js`, `flightAware.js`, `googleSheets.js` are unchanged; `splitwise.js` is the consolidated version, with an optional `groupId` threaded through every expense creator and `getFriendsList`/`getGroups` added for picker UIs).
+Each in `tools/utils/`, ported/consolidated from Guimail's equivalents. `axiosClient.js`, `googleAuth.js`, `googleCalendar.js`, `flightAware.js`, `googleSheets.js` are unchanged. `splitwise.js` is the consolidated version, with an optional `groupId` threaded through every expense creator plus `getFriendsList`/`getGroups` for picker UIs.
 
-`googleTasks.js` is net new and deliberately doesn't reuse `googleAuth.js`'s service-account factory — personal Google Task lists have no sharing/ACL mechanism, so the service account can't be granted access. It authenticates via OAuth2 with a refresh token instead. See `scripts/tasks-setup.md` for the one-time manual setup (this part requires Gui's own browser/Google login — it can't be scripted end-to-end).
+`settleUp.js` is the Settle Up client, replacing `splitwise.js`:
+- Auth is Firebase email/password for a dedicated bot account, inline in this file (unlike `googleAuth.js`, which is its own file because two consumers share it — Settle Up auth has only one consumer)
+- Signs in once, refreshes the ID token 5 minutes before its hourly expiry
+- `createExpense` takes an explicit `groupId` (the route picks household vs personal) and posts to `/transactions/<groupId>/<txId>.json`
+- Always sends `fixedExchangeRate: true` — undocumented in Settle Up's API docs, but required (confirmed by testing; writes without it get rejected)
+- No member registry — only two fixed people, so `routes/settleUp.js` references their IDs directly from env vars
+
+Settle Up group/permission/member creation can't be scripted over REST — security rules reject those writes (and even reads) outside the app itself, confirmed by testing. See `scripts/settleup-setup.md`. Two groups exist: household (Gui + Georgia) and personal (Gui only, mirrors Splitwise's groupless/personal bucket — Settle Up has no such concept, every transaction belongs to a group).
+
+`googleTasks.js` authenticates via OAuth2 with a refresh token, not `googleAuth.js`'s service account — personal Task lists have no ACL to grant it. See `scripts/tasks-setup.md`.
 
 ## Required env vars
 
-`SENTRY_DSN`, `SPLITWISE_API_KEY`, `SPLITWISE_FRIENDS`, `SPLITWISE_ID_GUI`, `SPLITWISE_ID_GEORGIA`, `GOOGLE_CAL_DEFAULT_ID`, `GOOGLE_CAL_SHARED_ID`, `FLIGHTAWARE_AEROAPI_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_TASKS_REFRESH_TOKEN`, `GOOGLE_TASKS_LIST_ID`, one `GUIDDLEWARE_SECRET_<CONSUMER>` per consumer — kept in `tools/.env` (gitignored). Also needs `tools/service-account-key.json` (gitignored) for Google Calendar auth, same file Guimail used to hold.
+`SENTRY_DSN`, `SPLITWISE_API_KEY`, `SPLITWISE_FRIENDS`, `SPLITWISE_ID_GUI`, `SPLITWISE_ID_GEORGIA`, `SETTLEUP_WEB_API_KEY`, `SETTLEUP_DATABASE_URL`, `SETTLEUP_BOT_EMAIL`, `SETTLEUP_BOT_PASSWORD`, `SETTLEUP_GROUP_ID_HOUSEHOLD`, `SETTLEUP_GROUP_ID_PERSONAL`, `SETTLEUP_MEMBER_ID_GUI_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GEORGIA_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GUI_PERSONAL`, `GOOGLE_CAL_DEFAULT_ID`, `GOOGLE_CAL_SHARED_ID`, `FLIGHTAWARE_AEROAPI_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_TASKS_REFRESH_TOKEN`, `GOOGLE_TASKS_LIST_ID`, one `GUIDDLEWARE_SECRET_<CONSUMER>` per consumer — kept in `tools/.env` (gitignored). Also needs `tools/service-account-key.json` (gitignored).
 
-- `SPLITWISE_FRIENDS` — minified JSON array of `{id, name, nickname}`; source of truth is `tools/scripts/friends.json` (gitignored, moved here from Guimail); run `npm run friends` to update `.env`; names are indexed by first name, full name, and each nickname token (split on spaces)
-- `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`/`GOOGLE_TASKS_REFRESH_TOKEN`/`GOOGLE_TASKS_LIST_ID` — see `scripts/tasks-setup.md` for how to obtain each; `scripts/getGoogleOAuthToken.js` and `scripts/listGoogleTaskLists.js` are one-off local scripts, not deployed with the function
+- `SPLITWISE_FRIENDS` — minified JSON array of `{id, name, nickname}`; source is `tools/scripts/friends.json` (gitignored); run `npm run friends` to update `.env`; indexed by first name, full name, and each nickname token
+- `SETTLEUP_WEB_API_KEY`/`SETTLEUP_DATABASE_URL` — sandbox: public key + `https://settle-up-sandbox.firebaseio.com`; live: key must come from Step Up Labs, don't hardcode until confirmed
+- `SETTLEUP_BOT_EMAIL`/`SETTLEUP_BOT_PASSWORD` — dedicated bot credentials, created manually; see `scripts/settleup-setup.md`
+- `SETTLEUP_GROUP_ID_HOUSEHOLD`/`SETTLEUP_GROUP_ID_PERSONAL` — the bot needs read/write permission (level `20`) on each, granted via the app
+- `SETTLEUP_MEMBER_ID_GUI_HOUSEHOLD`/`SETTLEUP_MEMBER_ID_GEORGIA_HOUSEHOLD`/`SETTLEUP_MEMBER_ID_GUI_PERSONAL` — per-group IDs (Gui's ID differs between groups); found via `node --env-file=.env scripts/settleUpDiscover.js`
+- `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`/`GOOGLE_TASKS_REFRESH_TOKEN`/`GOOGLE_TASKS_LIST_ID` — see `scripts/tasks-setup.md`; `getGoogleOAuthToken.js`/`listGoogleTaskLists.js` are one-off local scripts, not deployed
 
 ## Local testing
 
-The Firebase emulator (`npx firebase emulators:start --only functions`) refuses to load without `firebase-admin` present in `node_modules`, even though nothing in this codebase uses it. Don't add it to `package.json` (dev or prod) — Cloud Build installs the full `node_modules` tree (devDependencies included) before deploying, and `firebase-admin@14` conflicts with `firebase-functions@7`'s peer requirement (`^11 || ^12 || ^13`), which fails the deploy with `ERESOLVE`. If you need the emulator locally, `npm install firebase-admin` transiently and uninstall it again before deploying/committing.
+The Firebase emulator refuses to load without `firebase-admin` in `node_modules`, even though nothing here uses it. Don't add it to `package.json` — Cloud Build installs full `node_modules` before deploying, and `firebase-admin@14` conflicts with `firebase-functions@7`'s peer requirement, failing the deploy with `ERESOLVE`. If needed locally, `npm install firebase-admin` transiently and uninstall before deploying/committing.
 
 ## Deploy
 
