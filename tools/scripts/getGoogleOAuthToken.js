@@ -2,9 +2,8 @@
 import {google} from "googleapis";
 import {createInterface} from "node:readline/promises";
 
-// One-off OAuth2 flow to obtain a refresh token for any Google API scope.
-// Not deployed with the function; run locally, e.g.:
-//   node --env-file=.env scripts/getGoogleOAuthToken.js https://www.googleapis.com/auth/tasks
+// OAuth2 flow to obtain a refresh token for any Google API scope
+// Run `node --env-file=.env scripts/getGoogleOAuthToken.js <scope>`
 const REDIRECT_URI = "http://localhost";
 
 const scope = process.argv[2];

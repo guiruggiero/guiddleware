@@ -1,10 +1,8 @@
-// Imports
+// Import
 import {google} from "googleapis";
 
-// One-off script to find a Google Task list ID, needed for
-// GOOGLE_TASKS_LIST_ID. Not deployed with the function; run locally after
-// obtaining a refresh token via getGoogleOAuthToken.js, e.g.:
-//   node --env-file=.env scripts/listGoogleTaskLists.js
+// Find a Google Task list ID for GOOGLE_TASKS_LIST_ID
+// Run `node --env-file=.env scripts/listGoogleTaskLists.js`
 const auth = new google.auth.OAuth2(
   process.env.GOOGLE_OAUTH_CLIENT_ID,
   process.env.GOOGLE_OAUTH_CLIENT_SECRET,
