@@ -17,7 +17,10 @@ router.get("/track", async (req, res) => {
     res.json({url});
   } catch (error) {
     Sentry.captureException(error, {extra: {flightNumber}});
+
     res.status(502).json({error: error.message});
+
+    await Sentry.flush(2000);
   }
 });
 

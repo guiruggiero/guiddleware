@@ -30,7 +30,10 @@ router.post("/", async (req, res) => {
     res.json({id: result.data.id, title: result.data.title});
   } catch (error) {
     Sentry.captureException(error, {extra: {title}});
+
     res.status(502).json({error: error.message});
+
+    await Sentry.flush(2000);
   }
 });
 
@@ -52,7 +55,10 @@ router.get("/", async (req, res) => {
     });
   } catch (error) {
     Sentry.captureException(error);
+
     res.status(502).json({error: error.message});
+
+    await Sentry.flush(2000);
   }
 });
 
@@ -76,7 +82,10 @@ router.patch("/:id", async (req, res) => {
     res.json({id: result.data.id, status: result.data.status});
   } catch (error) {
     Sentry.captureException(error, {extra: {id}});
+
     res.status(502).json({error: error.message});
+
+    await Sentry.flush(2000);
   }
 });
 

@@ -27,7 +27,10 @@ router.post("/values", async (req, res) => {
     res.json({success: true});
   } catch (error) {
     Sentry.captureException(error, {extra: {spreadsheetId}});
+
     res.status(502).json({error: error.message});
+
+    await Sentry.flush(2000);
   }
 });
 

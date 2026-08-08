@@ -94,7 +94,10 @@ router.post("/expenses", async (req, res) => {
       extra: {description, amount, consumer: req.consumer},
     });
 
-    return res.status(502).json({error: error.message});
+    res.status(502).json({error: error.message});
+
+    await Sentry.flush(2000);
+    return;
   }
 });
 

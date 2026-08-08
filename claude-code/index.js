@@ -10,7 +10,13 @@ import {spawn} from "node:child_process";
 // Initialization
 Sentry.init({
     dsn: process.env.SENTRY_DSN,
-    sendDefaultPii: true,
+    dataCollection: {
+        userInfo: false,
+        cookies: false,
+        urlQueryParams: false,
+        genAI: {inputs: false, outputs: false},
+        databaseQueryData: false,
+    },
     tracesSampleRate: 1.0,
     enableLogs: true,
 });
@@ -178,9 +184,8 @@ const server = app.listen(process.env.EXPRESS_PORT, () => {
 // Graceful shutdown
 function gracefulShutdown() {
     server.close(async () => {
-    // console.log(" Server shut down");
+        // console.log(" Server shut down");
         Sentry.logger.info("Gateway: server shut down");
-
         await Sentry.flush(2000);
         process.exit(0);
     });

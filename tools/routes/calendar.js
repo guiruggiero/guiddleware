@@ -73,7 +73,10 @@ router.post("/events", async (req, res) => {
     res.json({id: result.data.id, link: result.data.htmlLink});
   } catch (error) {
     Sentry.captureException(error, {extra: {summary, calendarKey}});
+
     res.status(502).json({error: error.message});
+
+    await Sentry.flush(2000);
   }
 });
 

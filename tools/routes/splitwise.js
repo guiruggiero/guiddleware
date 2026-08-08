@@ -146,17 +146,24 @@ router.post("/expenses", async (req, res) => {
     Sentry.captureException(error, {
       extra: {description, amount, consumer: req.consumer},
     });
-    return res.status(502).json({error: error.message});
+
+    res.status(502).json({error: error.message});
+
+    await Sentry.flush(2000);
+    return;
   }
 });
 
 // GET /splitwise/friends
-router.get("/friends", (req, res) => {
+router.get("/friends", async (req, res) => {
   try {
     res.json({friends: getFriendsList()});
   } catch (error) {
     Sentry.captureException(error);
+
     res.status(502).json({error: error.message});
+
+    await Sentry.flush(2000);
   }
 });
 
@@ -166,7 +173,10 @@ router.get("/groups", async (req, res) => {
     res.json({groups: await getGroups()});
   } catch (error) {
     Sentry.captureException(error);
+
     res.status(502).json({error: error.message});
+
+    await Sentry.flush(2000);
   }
 });
 

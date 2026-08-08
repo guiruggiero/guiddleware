@@ -4,6 +4,12 @@ import * as Sentry from "@sentry/cloudflare";
 export default Sentry.withSentry(
     (env) => ({
         dsn: env.SENTRY_DSN,
+        dataCollection: {
+            userInfo: false,
+            cookies: false,
+            genAI: {inputs: false, outputs: false},
+            databaseQueryData: false,
+        },
         tracesSampleRate: 1.0,
         enableLogs: true,
     }),

@@ -15,6 +15,12 @@ import sheetsRouter from "./routes/sheets.js";
 // Initialization
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
+  dataCollection: {
+    userInfo: false,
+    cookies: false,
+    genAI: {inputs: false, outputs: false},
+    databaseQueryData: false,
+  },
   tracesSampleRate: 1.0,
   enableLogs: true,
 });
