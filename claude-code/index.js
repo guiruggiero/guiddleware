@@ -5,9 +5,9 @@ import express from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import {authenticate} from "./auth.js";
-import {spawn} from "node:child_process";
+import {execSync, spawn} from "node:child_process";
 
-// Initialization
+// Initializations
 Sentry.init({
     dsn: process.env.SENTRY_DSN,
     dataCollection: {
@@ -20,8 +20,7 @@ Sentry.init({
     tracesSampleRate: 1.0,
     enableLogs: true,
 });
-
-// Configuration
+const CLAUDE_BIN = execSync("command -v claude").toString().trim(); // spawn() never falls back to a PATH lookup
 const TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
 
 // Rate limiter
@@ -74,7 +73,7 @@ app.post(process.env.CLAUDE_CODE_GATEWAY_PATH, async (req, res) => {
 
     // Spawns Claude Code with the given CLI args; resolves with parsed result
     const spawnClaude = (cliArgs) => new Promise((resolve, reject) => {
-        const child = spawn("claude", cliArgs, {cwd: homedir()});
+        const child = spawn(CLAUDE_BIN, cliArgs, {cwd: homedir()});
         const chunks = []; // stdout buffered as Buffers, joined once on close
         let stderr = "";
 

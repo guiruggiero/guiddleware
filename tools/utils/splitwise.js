@@ -27,7 +27,7 @@ const normalizeDate = (date) => {
 
 // Creator for solo expenses (single-user), optionally against a group
 export const createSoloExpense = async (
-  description, amount, currency, details = "", date, groupId = 0) => {
+  description, amount, currency, details, date, groupId = 0) => {
   const res = await splitwiseClient.post("/create_expense", {
     cost: amount.toFixed(2),
     description,
@@ -43,7 +43,7 @@ export const createSoloExpense = async (
 
 // Creator for expenses from arbitrary per-person paid/owed shares
 export const createExpenseFromShares = async (
-  description, amount, currency, shares, details = "", date, groupId = 0) => {
+  description, amount, currency, shares, details, date, groupId = 0) => {
   const payload = {
     cost: amount.toFixed(2),
     description,
@@ -78,9 +78,10 @@ const splitEqual = (amount, numOthers) => {
 };
 
 // Creator for shared expenses (payer + N others, split equally)
-export const createSharedExpense = async (
-  description, amount, currency, otherPersonIds, payerId, details = "",
-  date, groupId = 0) => {
+export const createSharedExpense = async ({
+  description, amount, currency, otherPersonIds, payerId, details,
+  date, groupId = 0,
+}) => {
   const {cost, payerOwed, otherOwed} = splitEqual(
     amount, otherPersonIds.length);
 
@@ -124,7 +125,7 @@ const loadFriends = () => {
     friendRegistry.set(name.toLowerCase(), sid);
 
     if (nickname) {
-      for (const part of nickname.split(/\s+or\s+/i)) {
+      for (const part of nickname.split(/\s{1,20}or\s{1,20}/i)) {
         friendRegistry.set(part.trim().toLowerCase(), sid);
       }
     }

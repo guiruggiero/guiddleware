@@ -11,6 +11,34 @@ const GUI_HOUSEHOLD = process.env.SETTLEUP_MEMBER_ID_GUI_HOUSEHOLD;
 const GEORGIA_HOUSEHOLD = process.env.SETTLEUP_MEMBER_ID_GEORGIA_HOUSEHOLD;
 const GUI_PERSONAL = process.env.SETTLEUP_MEMBER_ID_GUI_PERSONAL;
 
+// Enforce expense parameters before writing
+function validateExpenseRequest(
+  {description, amount, currency, paidBy, split}) {
+  if (!description || typeof amount !== "number" || !currency) {
+    return "Missing description, amount, or currency";
+  }
+  if (paidBy !== "gui" && paidBy !== "georgia") {
+    return "paidBy must be \"gui\" or \"georgia\"";
+  }
+
+  const isEqualSplit = split === "equal";
+  const isExactSplit = split !== undefined && typeof split === "object" &&
+    split !== null && !Array.isArray(split);
+  if (split !== undefined && !isEqualSplit && !isExactSplit) {
+    return "split must be \"equal\" or {gui, georgia}";
+  }
+
+  if (isExactSplit) {
+    const {gui = 0, georgia = 0} = split;
+    if (typeof gui !== "number" || typeof georgia !== "number" ||
+      Math.abs(gui + georgia - amount) > 0.01) {
+      return "split amounts must be numbers summing to amount";
+    }
+  }
+
+  return null;
+}
+
 // POST /settleup/expenses
 router.post("/expenses", async (req, res) => {
   // Extract from request
@@ -19,34 +47,12 @@ router.post("/expenses", async (req, res) => {
     split, paidBy = "gui", category, source,
   } = req.body;
 
-  // Initial sanity check
-  if (!description || typeof amount !== "number" || !currency) {
-    return res.status(400)
-      .json({error: "Missing description, amount, or currency"});
-  }
-
-  // Only two fixed people exist, so paidBy is a closed enum, not a lookup
-  if (paidBy !== "gui" && paidBy !== "georgia") {
-    return res.status(400)
-      .json({error: "paidBy must be \"gui\" or \"georgia\""});
+  const validationError = validateExpenseRequest(
+    {description, amount, currency, paidBy, split});
+  if (validationError) {
+    return res.status(400).json({error: validationError});
   }
   const isEqualSplit = split === "equal";
-  const isExactSplit = split !== undefined && typeof split === "object" &&
-    split !== null && !Array.isArray(split);
-  if (split !== undefined && !isEqualSplit && !isExactSplit) {
-    return res.status(400)
-      .json({error: "split must be \"equal\" or {gui, georgia}"});
-  }
-
-  // Settle Up doesn't validate this itself, so enforce it before writing
-  if (isExactSplit) {
-    const {gui = 0, georgia = 0} = split;
-    if (typeof gui !== "number" || typeof georgia !== "number" ||
-      Math.abs(gui + georgia - amount) > 0.01) {
-      return res.status(400)
-        .json({error: "split amounts must be numbers summing to amount"});
-    }
-  }
 
   // "[source] description - details"
   const purpose = [source && `[${source}]`, description].filter(Boolean)

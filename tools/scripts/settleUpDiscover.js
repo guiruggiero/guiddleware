@@ -27,7 +27,9 @@ const auth = {params: {auth: idToken}};
 
 // Finds every group the bot has been granted access to
 const {data: userGroups} = await db.get(`/userGroups/${uid}.json`, auth);
-const groupIds = Object.keys(userGroups ?? {});
+const idPattern = /^[\w-]+$/;
+const groupIds = Object.keys(userGroups ?? {})
+  .filter((id) => idPattern.test(id));
 if (groupIds.length === 0) {
   console.error(
     "Bot has no groups. Create one in the app first (see settleup-setup.md)");

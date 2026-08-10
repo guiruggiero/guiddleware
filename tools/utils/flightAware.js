@@ -9,7 +9,7 @@ const aeroApiClient = createRetryClient({
 });
 
 // IATA flight number: 2-3 letter/digit airline code + 1-4 digit number
-const IATA_FLIGHT_NUMBER = /^[A-Z0-9]{2,3}[0-9]{1,4}$/;
+const IATA_FLIGHT_NUMBER = /^[A-Z\d]{2,3}\d{1,4}$/;
 
 // Resolves an IATA flight number to a FlightAware live-tracking URL
 export const getFlightAwareUrl = async (flightNumber) => {
