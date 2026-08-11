@@ -21,6 +21,9 @@ Firebase Cloud Function (`tools/index.js`). Single exported function `guiddlewar
 - `GET /tasks` — lists tasks (`taskListId?`, `showCompleted?`); returns `{id, title, notes, due, status}[]`.
 - `PATCH /tasks/:id` — updates a task's status (default `"completed"`); accepts `{status?, taskListId?}`.
 - `POST /sheets/values` — batch-writes cell ranges; accepts `{spreadsheetId, data: [{range, values}]}` (`valueInputOption` fixed to `"USER_ENTERED"`). No default spreadsheet — callers always specify one.
+- `POST /trello/cards` — creates a Trello card; accepts `{list?: "inbox", name, description?}`. `list` is one of the fixed list keys in `utils/trello.js` (`todo`, `inbox`, `prioritized`, `doing`, `waiting`, `habits`, `done`). Returns `{id, url}`.
+- `GET /trello/cards/search?q=<query>&limit?` — full-text search for card **titles only** on the single managed board, excluding the `done` list (biggest list, rarely what's being looked for). Despite older Trello docs implying description/comments are also indexed, testing against this board showed they aren't; `partial: true` is set so obvious substring matches aren't missed, but there's no fuzzy/typo-tolerant matching. Returns `{cards: [{id, name, description, url, list}]}`, `list` resolved to its name.
+- `PATCH /trello/cards/:id` — updates a card; accepts `{name?, note?, list?, direction?: "left"|"right"}`, at least one required (`list` and `direction` are mutually exclusive). Only provided fields are touched. `note` never overwrites the description — always prepends `"[bot] <note>\n---\n"` to whatever's there. `list` moves to a named list (see keys above); `direction` moves one position left/right along the board's fixed list order instead (errors if already at the first/last list).
 
 ## Auth
 
@@ -45,9 +48,11 @@ Settle Up group/permission/member creation can't be scripted over REST — secur
 
 `googleTasks.js` authenticates via OAuth2 with a refresh token, not `googleAuth.js`'s service account — personal Task lists have no ACL to grant it. OAuth setup is done and live; `getGoogleOAuthToken.js` can regenerate a refresh token if it's ever revoked.
 
+`trello.js` is a thin `axios`-based client (via `createRetryClient`, same as `flightAware.js`/`splitwise.js`) — no `trello.js` npm package, to avoid a second HTTP-client pattern. Key/token travel as query params (Trello's own auth scheme). Scoped to a single board, whose ID and 7 lists (fixed, always the same, in board order) are hardcoded in the file — not secrets, and knowing the fixed order is what makes `direction: "left"|"right"` moves possible. Create, search, and update are built; a webhook receiver (for live sync) is not.
+
 ## Required env vars
 
-`SENTRY_DSN`, `SPLITWISE_API_KEY`, `SPLITWISE_FRIENDS`, `SPLITWISE_ID_GUI`, `SPLITWISE_ID_GEORGIA`, `SETTLEUP_WEB_API_KEY`, `SETTLEUP_DATABASE_URL`, `SETTLEUP_BOT_EMAIL`, `SETTLEUP_BOT_PASSWORD`, `SETTLEUP_GROUP_ID_HOUSEHOLD`, `SETTLEUP_GROUP_ID_PERSONAL`, `SETTLEUP_MEMBER_ID_GUI_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GEORGIA_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GUI_PERSONAL`, `GOOGLE_CAL_DEFAULT_ID`, `GOOGLE_CAL_SHARED_ID`, `FLIGHTAWARE_AEROAPI_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_TASKS_REFRESH_TOKEN`, `GOOGLE_TASKS_LIST_ID`, one `GUIDDLEWARE_SECRET_<CONSUMER>` per consumer — kept in `tools/.env` (gitignored). Also needs `tools/service-account-key.json` (gitignored).
+`SENTRY_DSN`, `SPLITWISE_API_KEY`, `SPLITWISE_FRIENDS`, `SPLITWISE_ID_GUI`, `SPLITWISE_ID_GEORGIA`, `SETTLEUP_WEB_API_KEY`, `SETTLEUP_DATABASE_URL`, `SETTLEUP_BOT_EMAIL`, `SETTLEUP_BOT_PASSWORD`, `SETTLEUP_GROUP_ID_HOUSEHOLD`, `SETTLEUP_GROUP_ID_PERSONAL`, `SETTLEUP_MEMBER_ID_GUI_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GEORGIA_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GUI_PERSONAL`, `GOOGLE_CAL_DEFAULT_ID`, `GOOGLE_CAL_SHARED_ID`, `FLIGHTAWARE_AEROAPI_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_TASKS_REFRESH_TOKEN`, `GOOGLE_TASKS_LIST_ID`, `TRELLO_API_KEY`, `TRELLO_TOKEN`, one `GUIDDLEWARE_SECRET_<CONSUMER>` per consumer — kept in `tools/.env` (gitignored). Also needs `tools/service-account-key.json` (gitignored).
 
 - `SPLITWISE_FRIENDS` — minified JSON array of `{id, name, nickname}`; source is `tools/scripts/friends.json` (gitignored); run `npm run friends` to update `.env`; indexed by first name, full name, and each nickname token
 - `SETTLEUP_WEB_API_KEY`/`SETTLEUP_DATABASE_URL` — sandbox: public key + `https://settle-up-sandbox.firebaseio.com`; live: key must come from Step Up Labs, don't hardcode until confirmed

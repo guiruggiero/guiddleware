@@ -13,6 +13,7 @@ Three independently-deployed pieces:
 - FlightAware: resolve an IATA flight number to a live-tracking link
 - Google Tasks: create/list/complete to-do items (OAuth2, since personal task lists have no service-account sharing mechanism)
 - Google Sheets: batch-write cell ranges to any spreadsheet the service account can access; no hardcoded spreadsheet, callers say which one
+- Trello: create cards on a named list, full-text title search (excluding Done), update title/notes/list (absolute or left/right)
 - One Cloud Function wrapping an Express app (real internal path routing), deployed into the same shared Firebase project as Guimail's and the website's own functions
 - Per-consumer bearer token auth; each caller is tagged for attribution, never for branching logic
 - Rate-limited per consumer; `helmet` for HTTP header security
