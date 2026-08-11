@@ -1,7 +1,7 @@
 // Import
 import {createRetryClient} from "./axiosClient.js";
 
-// Initializations
+// Axios instances for Settle Up and Firebase Auth APIs
 const settleUpClient = createRetryClient({
   baseURL: process.env.SETTLEUP_DATABASE_URL,
   timeout: 10000, // 10s

@@ -66,7 +66,7 @@ router.post("/events", async (req, res) => {
     const result = await calendar.events.insert({
       calendarId, resource: eventResource,
     });
-    Sentry.logger.info("Guiddleware: Google Calendar event created", {
+    Sentry.logger.info("Google Calendar event created", {
       calendarId, eventId: result.data.id, consumer: req.consumer,
     });
 

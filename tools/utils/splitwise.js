@@ -1,6 +1,7 @@
 // Import
 import {createRetryClient} from "./axiosClient.js";
 
+// Axios instance for Splitwise API
 const splitwiseClient = createRetryClient({
   baseURL: "https://secure.splitwise.com/api/v3.0",
   timeout: 10000, // 10s

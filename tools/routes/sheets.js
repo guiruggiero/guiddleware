@@ -20,7 +20,7 @@ router.post("/values", async (req, res) => {
       resource: {valueInputOption: "USER_ENTERED", data},
     });
 
-    Sentry.logger.info("Guiddleware: Google Sheet updated", {
+    Sentry.logger.info("Google Sheet updated", {
       spreadsheetId, ranges: data.map((d) => d.range), consumer: req.consumer,
     });
 

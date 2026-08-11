@@ -23,7 +23,7 @@ router.post("/", async (req, res) => {
       resource: {title, notes, due: toDueTimestamp(due)},
     });
 
-    Sentry.logger.info("Guiddleware: task created", {
+    Sentry.logger.info("Task created", {
       taskId: result.data.id, consumer: req.consumer,
     });
 
@@ -75,7 +75,7 @@ router.patch("/:id", async (req, res) => {
       resource: {status},
     });
 
-    Sentry.logger.info("Guiddleware: task updated", {
+    Sentry.logger.info("Task updated", {
       taskId: id, status: result.data.status, consumer: req.consumer,
     });
 
