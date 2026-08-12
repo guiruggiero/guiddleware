@@ -173,7 +173,7 @@ app.post(process.env.CLAUDE_CODE_GATEWAY_PATH, async (req, res) => {
 });
 
 // Start the server
-const server = app.listen(process.env.EXPRESS_PORT, () => {
+const server = app.listen(process.env.EXPRESS_PORT, "127.0.0.1", () => {
     // console.log(`Gateway listening on port ${process.env.EXPRESS_PORT}`);
     Sentry.logger.info("Gateway: up and listening");
 
