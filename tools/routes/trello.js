@@ -50,7 +50,10 @@ router.patch("/cards/:id", async (req, res) => {
       cardId: id, consumer: req.consumer,
     });
 
-    res.json({id: card.id, name: card.name, description: card.desc});
+    res.json({
+      id: card.id, name: card.name, description: card.desc,
+      url: card.shortUrl,
+    });
   } catch (error) {
     Sentry.captureException(error, {extra: {id}});
 
