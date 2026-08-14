@@ -6,7 +6,7 @@ Firebase Cloud Function (`tools/index.js`). Single exported function `guiddlewar
 
 ## Routes
 
-- `POST /splitwise/expenses` — **being migrated off, see below**. Creates a Splitwise expense; consolidates solo/equal/uneven/group logic Guimail and GuiDo each used to implement separately. Accepts `{description, amount, currency, details?, date?, splitWith?, paidBy?, owedAmounts?, groupId?, source?}`. Falls back to a solo expense (with a note) if a name can't be resolved or `owedAmounts` don't sum to `amount`.
+- `POST /splitwise/expenses` — Creates a Splitwise expense; consolidates solo/equal/uneven/group logic Guimail and GuiDo each used to implement separately. Accepts `{description, amount, currency, details?, date?, splitWith?, paidBy?, owedAmounts?, groupId?, source?}`. Falls back to a solo expense (with a note) if a name can't be resolved or `owedAmounts` don't sum to `amount`. **Also fires a fire-and-forget Settle Up mirror** for household-only expenses (see `/settleup/expenses`) and solo expenses — dual-write phase until Splitwise is fully replaced (target Sept 15).
 - `GET /splitwise/friends` — parsed `SPLITWISE_FRIENDS` list (`{id, name, nickname}[]`), for a friend picker.
 - `GET /splitwise/groups` — user's Splitwise groups (`{id, name}[]`), for a group picker.
 - `POST /settleup/expenses` — Settle Up replacement for `/splitwise/expenses` (Splitwise started charging for API usage). Not interface-compatible, and not general-purpose: scoped to exactly two fixed people (Gui, Georgia) and two fixed groups, no arbitrary friends. Accepts `{description, amount, currency, details?, date?, split?, paidBy?, category?, source?}`.

@@ -9,8 +9,16 @@ import {
   getFriendsList,
   getGroups,
 } from "../utils/splitwise.js";
+import {createExpense as createSettleUpExpense} from "../utils/settleUp.js";
 
 const router = Router();
+
+// Settle Up mirror — env vars for dual-write
+const SU_HOUSEHOLD_GROUP = process.env.SETTLEUP_GROUP_ID_HOUSEHOLD;
+const SU_PERSONAL_GROUP = process.env.SETTLEUP_GROUP_ID_PERSONAL;
+const SU_GUI = process.env.SETTLEUP_MEMBER_ID_GUI_HOUSEHOLD;
+const SU_GEORGIA = process.env.SETTLEUP_MEMBER_ID_GEORGIA_HOUSEHOLD;
+const SU_GUI_PERSONAL = process.env.SETTLEUP_MEMBER_ID_GUI_PERSONAL;
 
 // Resolves a lowercase name to a Splitwise ID
 const resolveId = (name, friends) =>
@@ -123,6 +131,55 @@ async function resolveEqualSplit(
   return {expense: result.data.expenses?.[0]};
 }
 
+// Fires a fire-and-forget Settle Up mirror for successful household-only
+// (gui+georgia) expenses. Errors are logged to Sentry but never surface to
+// callers — called without await so the SW response is unaffected.
+function mirrorToSettleUp(
+  {names, owedAmounts, hasOwedAmounts, description, amount, currency,
+    details, date, paidBy, source}) {
+  const isHouseholdOnly = hasOwedAmounts
+    ? owedAmounts.every(
+        ({name}) => ["gui", "georgia"].includes(name.toLowerCase()))
+    : names.length === 1 && names[0] === "georgia";
+  if (!isHouseholdOnly) return;
+
+  const purpose = [source && `[${source}]`, description]
+    .filter(Boolean).join(" ") + (details ? ` - ${details}` : "");
+  const payerName = paidBy?.toLowerCase() ?? "gui";
+  const payerId = payerName === "gui" ? SU_GUI : SU_GEORGIA;
+
+  let items;
+  if (hasOwedAmounts) {
+    const guiOwed =
+      owedAmounts.find(({name}) => name.toLowerCase() === "gui")?.owed ?? 0;
+    const georgiaOwed =
+      owedAmounts.find(({name}) => name.toLowerCase() === "georgia")?.owed ?? 0;
+    items = [{
+      amount: amount.toFixed(2),
+      forWhom: [
+        {memberId: SU_GUI, weight: guiOwed.toFixed(2)},
+        {memberId: SU_GEORGIA, weight: georgiaOwed.toFixed(2)},
+      ],
+    }];
+  } else {
+    items = [{
+      amount: amount.toFixed(2),
+      forWhom: [
+        {memberId: SU_GUI, weight: "1"},
+        {memberId: SU_GEORGIA, weight: "1"},
+      ],
+    }];
+  }
+
+  createSettleUpExpense({
+    groupId: SU_HOUSEHOLD_GROUP, description: purpose, currency, date,
+    whoPaid: [{memberId: payerId, weight: "1"}],
+    items,
+  }).catch((error) => Sentry.captureException(error, {
+    extra: {description, amount, context: "settleup_mirror"},
+  }));
+}
+
 // POST /splitwise/expenses
 router.post("/expenses", async (req, res) => {
   const {
@@ -146,6 +203,21 @@ router.post("/expenses", async (req, res) => {
     if (names.length === 0 && !hasOwedAmounts) {
       const result = await createSoloExpense(
         description, amount, currency, fullDetails, date, groupId ?? 0);
+
+      // Mirror to Settle Up personal group
+      const purpose = [source && `[${source}]`, description]
+        .filter(Boolean).join(" ") + (details ? ` - ${details}` : "");
+      createSettleUpExpense({
+        groupId: SU_PERSONAL_GROUP, description: purpose, currency, date,
+        whoPaid: [{memberId: SU_GUI_PERSONAL, weight: "1"}],
+        items: [{
+          amount: amount.toFixed(2),
+          forWhom: [{memberId: SU_GUI_PERSONAL, weight: "1"}],
+        }],
+      }).catch((error) => Sentry.captureException(error, {
+        extra: {description, amount, context: "settleup_mirror"},
+      }));
+
       return res.json({expense: result.data.expenses?.[0]});
     }
 
@@ -165,6 +237,15 @@ router.post("/expenses", async (req, res) => {
         names, friends, payerId, description, amount, currency, fullDetails,
         date, groupId,
       });
+
+    // Mirror successful household expenses to Settle Up (parallel dual-write)
+    if (!response.fallback) {
+      mirrorToSettleUp({
+        names, owedAmounts, hasOwedAmounts, description, amount, currency,
+        details, date, paidBy, source,
+      });
+    }
+
     return res.json(response);
   } catch (error) {
     Sentry.captureException(error, {
