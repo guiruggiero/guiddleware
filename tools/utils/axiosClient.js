@@ -5,6 +5,7 @@ import axiosRetry from "axios-retry";
 // Standard retry configuration
 export const defaultRetryCondition = (error) =>
   axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+  // Doesn't cover HTTP 429, add if rate limiting is observed
   (error.response && error.response.status >= 500);
 
 // Axios client factory
