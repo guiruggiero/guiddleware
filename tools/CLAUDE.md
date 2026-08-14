@@ -1,12 +1,12 @@
 # tools/CLAUDE.md
 
-Firebase Cloud Function (`tools/index.js`). Single exported function `guiddleware`, wrapping an Express app so every route below is one deployed function/URL with real internal path routing — not one Cloud Function per capability (contrast with `guipt`/`guiwise` in the `website` repo, which are separate functions). Deployed into the shared `guiruggiero` Firebase project, alongside Guimail's `guimail` function and the website's `guipt`/`guiwise`.
+Firebase Cloud Function (`tools/index.js`). Single exported function `guiddleware`, wrapping an Express app so every route below is one deployed function/URL with real internal path routing — not one Cloud Function per capability (contrast with `guipt` in the `website` repo, which is its own function). Deployed into the shared `guiruggiero` Firebase project, alongside Guimail's `guimail` function and the website's `guipt`.
 
-**URL**: `https://us-central1-guiruggiero.cloudfunctions.net/guiddleware` — same stable `cloudfunctions.net` shape as `guimail`/`guipt`/`guiwise`. `firebase deploy` prints a `*.run.app` URL after deploying (the underlying Cloud Run revision) — ignore that one, it's not what callers should use.
+**URL**: `https://us-central1-guiruggiero.cloudfunctions.net/guiddleware` — same stable `cloudfunctions.net` shape as `guimail`/`guipt`. `firebase deploy` prints a `*.run.app` URL after deploying (the underlying Cloud Run revision) — ignore that one, it's not what callers should use.
 
 ## Routes
 
-- `POST /splitwise/expenses` — **being migrated off, see below**. Creates a Splitwise expense; consolidates solo/equal/uneven/group logic Guimail, GuiDo, and Guiwise each used to implement separately. Accepts `{description, amount, currency, details?, date?, splitWith?, paidBy?, owedAmounts?, groupId?, source?}`. Falls back to a solo expense (with a note) if a name can't be resolved or `owedAmounts` don't sum to `amount`.
+- `POST /splitwise/expenses` — **being migrated off, see below**. Creates a Splitwise expense; consolidates solo/equal/uneven/group logic Guimail and GuiDo each used to implement separately. Accepts `{description, amount, currency, details?, date?, splitWith?, paidBy?, owedAmounts?, groupId?, source?}`. Falls back to a solo expense (with a note) if a name can't be resolved or `owedAmounts` don't sum to `amount`.
 - `GET /splitwise/friends` — parsed `SPLITWISE_FRIENDS` list (`{id, name, nickname}[]`), for a friend picker.
 - `GET /splitwise/groups` — user's Splitwise groups (`{id, name}[]`), for a group picker.
 - `POST /settleup/expenses` — Settle Up replacement for `/splitwise/expenses` (Splitwise started charging for API usage). Not interface-compatible, and not general-purpose: scoped to exactly two fixed people (Gui, Georgia) and two fixed groups, no arbitrary friends. Accepts `{description, amount, currency, details?, date?, split?, paidBy?, category?, source?}`.

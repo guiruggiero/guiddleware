@@ -1,7 +1,7 @@
 [![CodeQL](https://github.com/guiruggiero/guiddleware/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/guiruggiero/guiddleware/actions/workflows/github-code-scanning/codeql)
 [![Dependencies](https://github.com/guiruggiero/guiddleware/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/guiruggiero/guiddleware/actions/workflows/dependabot/dependabot-updates)
 
-Shared backend middleware for [Guimail](https://github.com/guiruggiero/guimail), [GuiDo](https://github.com/guiruggiero/guido), and Guiwise (part of [website](https://github.com/guiruggiero/website)) — one place for Splitwise, Google Calendar, FlightAware, Google Tasks, Google Sheets, and Claude Code integrations, instead of each interface hand-rolling its own.
+Shared backend middleware for [Guimail](https://github.com/guiruggiero/guimail) and [GuiDo](https://github.com/guiruggiero/guido) — one place for Splitwise, Settle Up, Google Calendar, FlightAware, Google Tasks, Google Sheets, and Claude Code integrations, instead of each interface hand-rolling its own.
 
 ### 🏗️ Architecture
 
