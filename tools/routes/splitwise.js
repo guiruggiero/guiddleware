@@ -137,10 +137,10 @@ async function resolveEqualSplit(
 function mirrorToSettleUp(
   {names, owedAmounts, hasOwedAmounts, description, amount, currency,
     details, date, paidBy, source}) {
-  const isHouseholdOnly = hasOwedAmounts
-    ? owedAmounts.every(
-        ({name}) => ["gui", "georgia"].includes(name.toLowerCase()))
-    : names.length === 1 && names[0] === "georgia";
+  const isHouseholdOnly = hasOwedAmounts ?
+    owedAmounts.every(
+      ({name}) => ["gui", "georgia"].includes(name.toLowerCase())) :
+    names.length === 1 && names[0] === "georgia";
   if (!isHouseholdOnly) return;
 
   const purpose = [source && `[${source}]`, description]
