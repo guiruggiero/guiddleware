@@ -14,7 +14,7 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.1",
     "firebase-functions": "^7.3.2",
-    "googleapis": "^174.0.0",
+    "googleapis": "^176.0.0",
     "helmet": "^8.3.0"
   },
   "devDependencies": {
