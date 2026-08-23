@@ -40,6 +40,23 @@ export const createCard = async (listKey, name, description) => {
   return res.data;
 };
 
+// Resolves the target list ID for an explicit list name or a relative move
+const resolveTargetListId = (currentListId, {list, direction}) => {
+  if (list !== undefined) {
+    const target = listByKey.get(list.toLowerCase());
+    if (!target) throw new Error(`Unknown Trello list: ${list}`);
+    return target.id;
+  }
+
+  const idx = LISTS.findIndex((l) => l.id === currentListId);
+  const target = LISTS[idx + (direction === "right" ? 1 : -1)];
+  if (!target) {
+    const end = direction === "right" ? "last" : "first";
+    throw new Error(`Card is already at the ${end} list`);
+  }
+  return target.id;
+};
+
 // Updates title, prepends a note to description, and/or moves lists
 export const updateCard = async (cardId, {
   name, note, list, direction,
@@ -64,18 +81,8 @@ export const updateCard = async (cardId, {
     params.desc = `[bot] ${note}\n---\n${current.desc}`;
   }
 
-  if (list !== undefined) {
-    const target = listByKey.get(list.toLowerCase());
-    if (!target) throw new Error(`Unknown Trello list: ${list}`);
-    params.idList = target.id;
-  } else if (direction !== undefined) {
-    const idx = LISTS.findIndex((l) => l.id === current.idList);
-    const target = LISTS[idx + (direction === "right" ? 1 : -1)];
-    if (!target) {
-      const end = direction === "right" ? "last" : "first";
-      throw new Error(`Card is already at the ${end} list`);
-    }
-    params.idList = target.id;
+  if (list !== undefined || direction !== undefined) {
+    params.idList = resolveTargetListId(current?.idList, {list, direction});
   }
 
   const res = await trelloClient.put(`/cards/${cardId}`, null, {params});
