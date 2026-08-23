@@ -38,7 +38,7 @@ export default Sentry.withSentry(
                     const controller = new AbortController();
                     const timeoutID = setTimeout(() => controller.abort(), 2000); // 2s
                     const ngrokCheck = await fetch(env.NGROK_BASE_URL, {
-                        signal: controller.signal, // Any response means the tunnel is reachable - TODO: test
+                        signal: controller.signal, // Any response means the tunnel is reachable
                         headers: {"ngrok-skip-browser-warning": "true"},
                     });
                     clearTimeout(timeoutID);
