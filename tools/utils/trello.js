@@ -44,6 +44,11 @@ export const createCard = async (listKey, name, description) => {
 export const updateCard = async (cardId, {
   name, note, list, direction,
 } = {}) => {
+  // Validate it's 24-char card ID
+  if (!/^[0-9a-f]{24}$/i.test(cardId)) {
+    throw new Error(`Invalid Trello card ID: ${cardId}`);
+  }
+
   const params = {};
   if (name !== undefined) params.name = name;
 
