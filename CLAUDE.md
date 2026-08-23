@@ -1,6 +1,6 @@
 # Guiddleware
 
-Shared backend middleware for Guimail and GuiDo (and future consumers like an Index 01/Pebble webhook), replacing logic that used to be duplicated across those repos.
+Shared backend middleware for Guimail and GuiDo (including Guindex), replacing logic that used to be duplicated across those repos.
 
 This repo holds multiple independently-deployed pieces, each with its own deploy target:
 
