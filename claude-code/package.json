@@ -6,7 +6,7 @@
     "type": "module",
     "main": "index.js",
     "dependencies": {
-        "@sentry/node": "^10.70.0",
+        "@sentry/node": "^10.71.0",
         "express": "^5.2.1",
         "express-rate-limit": "^8.6.1",
         "helmet": "^8.2.0"
@@ -14,7 +14,7 @@
     "devDependencies": {
         "@eslint/js": "^10.0.1",
         "@stylistic/eslint-plugin": "^5.9.0",
-        "eslint": "^10.8.0",
+        "eslint": "^10.9.1",
         "globals": "^17.10.0"
     },
     "scripts": {
