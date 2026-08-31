@@ -17,6 +17,9 @@
         "eslint": "^10.9.1",
         "globals": "^17.10.0"
     },
+    "overrides": {
+        "qs": ">=6.16.0"
+    },
     "scripts": {
         "lint": "eslint .",
         "lint-fix": "eslint . --fix",
