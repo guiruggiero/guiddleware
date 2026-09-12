@@ -5,7 +5,6 @@ import express from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import {authenticate} from "./auth.js";
-import splitwiseRouter from "./routes/splitwise.js";
 import settleUpRouter from "./routes/settleUp.js";
 import calendarRouter from "./routes/calendar.js";
 import flightAwareRouter from "./routes/flightAware.js";
@@ -42,7 +41,6 @@ app.use(helmet()); // HTTP header security
 app.use(express.json());
 app.use(authenticate);
 app.use(toolsRateLimit);
-app.use("/splitwise", splitwiseRouter);
 app.use("/settleup", settleUpRouter);
 app.use("/calendar", calendarRouter);
 app.use("/flightaware", flightAwareRouter);

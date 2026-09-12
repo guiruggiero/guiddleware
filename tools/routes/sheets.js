@@ -5,7 +5,7 @@ import {getSheetsClient} from "../utils/googleSheets.js";
 
 const router = Router();
 
-// No hardcoded spreadsheet (unlike Splitwise/Calendar) — caller picks one
+// No hardcoded spreadsheet (unlike Settle Up/Calendar) — caller picks one
 router.post("/values", async (req, res) => {
   const {spreadsheetId, data} = req.body;
   if (!spreadsheetId || !Array.isArray(data) || data.length === 0) {

@@ -6,10 +6,7 @@ Firebase Cloud Function (`tools/index.js`). Single exported function `guiddlewar
 
 ## Routes
 
-- `POST /splitwise/expenses` — Creates a Splitwise expense; consolidates solo/equal/uneven/group logic Guimail and GuiDo each used to implement separately. Accepts `{description, amount, currency, details?, date?, splitWith?, paidBy?, owedAmounts?, groupId?, source?}`. Falls back to a solo expense (with a note) if a name can't be resolved or `owedAmounts` don't sum to `amount`. **Also fires a fire-and-forget Settle Up mirror** for household-only expenses (see `/settleup/expenses`) and solo expenses — dual-write phase until Splitwise is fully replaced (target Sept 15).
-- `GET /splitwise/friends` — parsed `SPLITWISE_FRIENDS` list (`{id, name, nickname}[]`), for a friend picker.
-- `GET /splitwise/groups` — user's Splitwise groups (`{id, name}[]`), for a group picker.
-- `POST /settleup/expenses` — Settle Up replacement for `/splitwise/expenses` (Splitwise started charging for API usage). Not interface-compatible, and not general-purpose: scoped to exactly two fixed people (Gui, Georgia) and two fixed groups, no arbitrary friends. Accepts `{description, amount, currency, details?, date?, split?, paidBy?, category?, source?}`.
+- `POST /settleup/expenses` — Creates a Settle Up expense. Not general-purpose: scoped to exactly two fixed people (Gui, Georgia) and two fixed groups, no arbitrary friends. Accepts `{description, amount, currency, details?, date?, split?, paidBy?, category?, source?}`.
   - `split` omitted → solo expense in the personal group (Gui only)
   - `split: "equal"` → 50/50 in the household group
   - `split: {gui, georgia}` → exact amounts in the household group, must sum to `amount`
@@ -35,26 +32,25 @@ Rate-limited to 10 requests per 10 minutes per consumer (`express-rate-limit`, k
 
 ## Utilities
 
-Each in `tools/utils/`, ported/consolidated from Guimail's equivalents. `axiosClient.js`, `googleAuth.js`, `googleCalendar.js`, `flightAware.js`, `googleSheets.js` are unchanged. `splitwise.js` is the consolidated version, with an optional `groupId` threaded through every expense creator plus `getFriendsList`/`getGroups` for picker UIs.
+Each in `tools/utils/`, ported/consolidated from Guimail's equivalents. `axiosClient.js`, `googleAuth.js`, `googleCalendar.js`, `flightAware.js`, `googleSheets.js` are unchanged.
 
-`settleUp.js` is the Settle Up client, replacing `splitwise.js`:
+`settleUp.js` is the Settle Up client:
 - Auth is Firebase email/password for a dedicated bot account, inline in this file (unlike `googleAuth.js`, which is its own file because two consumers share it — Settle Up auth has only one consumer)
 - Signs in once, refreshes the ID token 5 minutes before its hourly expiry
 - `createExpense` takes an explicit `groupId` (the route picks household vs personal) and posts to `/transactions/<groupId>/<txId>.json`
 - Always sends `fixedExchangeRate: true` — undocumented in Settle Up's API docs, but required (confirmed by testing; writes without it get rejected)
 - No member registry — only two fixed people, so `routes/settleUp.js` references their IDs directly from env vars
 
-Settle Up group/permission/member creation can't be scripted over REST — security rules reject those writes (and even reads) outside the app itself, confirmed by testing. See `scripts/settleup-setup.md`. Two groups exist: household (Gui + Georgia) and personal (Gui only, mirrors Splitwise's groupless/personal bucket — Settle Up has no such concept, every transaction belongs to a group).
+Settle Up group/permission/member creation can't be scripted over REST — security rules reject those writes (and even reads) outside the app itself, confirmed by testing. See `scripts/settleup-setup.md`. Two groups exist: household (Gui + Georgia) and personal (Gui only) — every transaction belongs to a group, there's no groupless concept.
 
 `googleTasks.js` authenticates via OAuth2 with a refresh token, not `googleAuth.js`'s service account — personal Task lists have no ACL to grant it. OAuth setup is done and live; `getGoogleOAuthToken.js` can regenerate a refresh token if it's ever revoked.
 
-`trello.js` is a thin `axios`-based client (via `createRetryClient`, same as `flightAware.js`/`splitwise.js`) — no `trello.js` npm package, to avoid a second HTTP-client pattern. Key/token travel as query params (Trello's own auth scheme). Scoped to a single board, whose ID and 7 lists (fixed, always the same, in board order) are hardcoded in the file — not secrets, and knowing the fixed order is what makes `direction: "left"|"right"` moves possible. Create, search, and update are built; a webhook receiver (for live sync) is not.
+`trello.js` is a thin `axios`-based client (via `createRetryClient`, same as `flightAware.js`) — no `trello.js` npm package, to avoid a second HTTP-client pattern. Key/token travel as query params (Trello's own auth scheme). Scoped to a single board, whose ID and 7 lists (fixed, always the same, in board order) are hardcoded in the file — not secrets, and knowing the fixed order is what makes `direction: "left"|"right"` moves possible. Create, search, and update are built; a webhook receiver (for live sync) is not.
 
 ## Required env vars
 
-`SENTRY_DSN`, `SPLITWISE_API_KEY`, `SPLITWISE_FRIENDS`, `SPLITWISE_ID_GUI`, `SPLITWISE_ID_GEORGIA`, `SETTLEUP_WEB_API_KEY`, `SETTLEUP_DATABASE_URL`, `SETTLEUP_BOT_EMAIL`, `SETTLEUP_BOT_PASSWORD`, `SETTLEUP_GROUP_ID_HOUSEHOLD`, `SETTLEUP_GROUP_ID_PERSONAL`, `SETTLEUP_MEMBER_ID_GUI_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GEORGIA_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GUI_PERSONAL`, `GOOGLE_CAL_DEFAULT_ID`, `GOOGLE_CAL_SHARED_ID`, `FLIGHTAWARE_AEROAPI_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_TASKS_REFRESH_TOKEN`, `GOOGLE_TASKS_LIST_ID`, `TRELLO_API_KEY`, `TRELLO_TOKEN`, one `GUIDDLEWARE_SECRET_<CONSUMER>` per consumer — kept in `tools/.env` (gitignored). Also needs `tools/service-account-key.json` (gitignored).
+`SENTRY_DSN`, `SETTLEUP_WEB_API_KEY`, `SETTLEUP_DATABASE_URL`, `SETTLEUP_BOT_EMAIL`, `SETTLEUP_BOT_PASSWORD`, `SETTLEUP_GROUP_ID_HOUSEHOLD`, `SETTLEUP_GROUP_ID_PERSONAL`, `SETTLEUP_MEMBER_ID_GUI_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GEORGIA_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GUI_PERSONAL`, `GOOGLE_CAL_DEFAULT_ID`, `GOOGLE_CAL_SHARED_ID`, `FLIGHTAWARE_AEROAPI_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_TASKS_REFRESH_TOKEN`, `GOOGLE_TASKS_LIST_ID`, `TRELLO_API_KEY`, `TRELLO_TOKEN`, one `GUIDDLEWARE_SECRET_<CONSUMER>` per consumer — kept in `tools/.env` (gitignored). Also needs `tools/service-account-key.json` (gitignored).
 
-- `SPLITWISE_FRIENDS` — minified JSON array of `{id, name, nickname}`; source is `tools/scripts/friends.json` (gitignored); run `npm run friends` to update `.env`; indexed by first name, full name, and each nickname token
 - `SETTLEUP_WEB_API_KEY`/`SETTLEUP_DATABASE_URL` — sandbox: public key + `https://settle-up-sandbox.firebaseio.com`; live: key must come from Step Up Labs, don't hardcode until confirmed
 - `SETTLEUP_BOT_EMAIL`/`SETTLEUP_BOT_PASSWORD` — dedicated bot credentials, created manually; see `scripts/settleup-setup.md`
 - `SETTLEUP_GROUP_ID_HOUSEHOLD`/`SETTLEUP_GROUP_ID_PERSONAL` — the bot needs read/write permission (level `20`) on each, granted via the app

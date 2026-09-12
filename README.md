@@ -1,14 +1,14 @@
 [![CodeQL](https://github.com/guiruggiero/guiddleware/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/guiruggiero/guiddleware/actions/workflows/github-code-scanning/codeql)
 [![Dependencies](https://github.com/guiruggiero/guiddleware/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/guiruggiero/guiddleware/actions/workflows/dependabot/dependabot-updates)
 
-Shared backend middleware for [Guimail](https://github.com/guiruggiero/guimail) and [GuiDo](https://github.com/guiruggiero/guido) — one place for Splitwise, Settle Up, Google Calendar, FlightAware, Google Tasks, Google Sheets, and Claude Code integrations, instead of each interface hand-rolling its own.
+Shared backend middleware for [Guimail](https://github.com/guiruggiero/guimail) and [GuiDo](https://github.com/guiruggiero/guido) — one place for Settle Up, Google Calendar, FlightAware, Google Tasks, Google Sheets, and Claude Code integrations, instead of each interface hand-rolling its own.
 
 ### 🏗️ Architecture
 
 Three independently-deployed pieces:
 
 #### Firebase Cloud Function (`tools/`, deployed as the `guiddleware` function — folder name and deploy name are independent)
-- Splitwise: create expenses (solo, equal split, uneven split, group), list friends, list groups
+- Settle Up: create expenses (solo, equal split, uneven split), scoped to Gui and Georgia
 - Google Calendar: create events, per-calendar routing
 - FlightAware: resolve an IATA flight number to a live-tracking link
 - Google Tasks: create/list/complete to-do items (OAuth2, since personal task lists have no service-account sharing mechanism)
