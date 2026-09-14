@@ -18,4 +18,4 @@ Claude Code Gateway (`claude-code/index.js`). Express server that spawns `claude
 
 ## PM2
 
-App name: `claudeCode`. Managed via `claude-code/pm2.config.js`. Runs on code-server.
+App name: `claudeCodeGateway`. Managed via `claude-code/pm2.config.js`. Runs on code-server.
