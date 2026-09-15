@@ -2,42 +2,57 @@
 
 Firebase Cloud Function (`tools/index.js`). Single exported function `guiddleware`, wrapping an Express app so every route below is one deployed function/URL with real internal path routing — not one Cloud Function per capability (contrast with `guipt` in the `website` repo, which is its own function). Deployed into the shared `guiruggiero` Firebase project, alongside Guimail's `guimail` function and the website's `guipt`.
 
-**URL**: `https://us-central1-guiruggiero.cloudfunctions.net/guiddleware` — same stable `cloudfunctions.net` shape as `guimail`/`guipt`. `firebase deploy` prints a `*.run.app` URL after deploying (the underlying Cloud Run revision) — ignore that one, it's not what callers should use.
+**URL**: `https://us-central1-guiruggiero.cloudfunctions.net/guiddleware` — same stable `cloudfunctions.net` shape as `guimail`/`guipt`. `firebase deploy` also prints a `*.run.app` URL (the underlying Cloud Run revision) — ignore that one, it's not what callers should use.
 
 ## Routes
 
-- `POST /splitwise/expenses` — Creates a Splitwise expense; consolidates solo/equal/uneven/group logic Guimail and GuiDo each used to implement separately. Accepts `{description, amount, currency, details?, date?, splitWith?, paidBy?, owedAmounts?, groupId?, source?}`. Falls back to a solo expense (with a note) if a name can't be resolved or `owedAmounts` don't sum to `amount`. **Also fires a fire-and-forget Settle Up mirror** for household-only expenses (see `/settleup/expenses`) and solo expenses — dual-write phase until Splitwise is fully replaced (target Sept 15).
-- `GET /splitwise/friends` — parsed `SPLITWISE_FRIENDS` list (`{id, name, nickname}[]`), for a friend picker.
-- `GET /splitwise/groups` — user's Splitwise groups (`{id, name}[]`), for a group picker.
-- `POST /settleup/expenses` — Settle Up replacement for `/splitwise/expenses` (Splitwise started charging for API usage). Not interface-compatible, and not general-purpose: scoped to exactly two fixed people (Gui, Georgia) and two fixed groups, no arbitrary friends. Accepts `{description, amount, currency, details?, date?, split?, paidBy?, category?, source?}`.
-  - `split` omitted → solo expense in the personal group (Gui only)
-  - `split: "equal"` → 50/50 in the household group
-  - `split: {gui, georgia}` → exact amounts in the household group, must sum to `amount`
-  - `paidBy` (`"gui"` default or `"georgia"`) only applies when `split` is set
-  - Returns `{expense: {id}}`
-- `POST /calendar/events` — creates a Google Calendar event; accepts `{summary, start, end, timeZone?, location?, description?, calendar?: "default"|"shared", reminders?, isSpecialProject?}`. All-day vs timed is inferred from whether `start` contains `T`.
-- `GET /flightaware/track?flightNumber=<IATA>` — resolves an IATA flight number to a live-tracking URL, or `{url: null}`. Callers compose this with `/calendar/events` themselves.
-- `POST /tasks` — creates a Google Task; accepts `{title, notes?, due?, taskListId?}`. `due` is date-only — Google Tasks silently discards time-of-day.
-- `GET /tasks` — lists tasks (`taskListId?`, `showCompleted?`); returns `{id, title, notes, due, status}[]`.
-- `PATCH /tasks/:id` — updates a task's status (default `"completed"`); accepts `{status?, taskListId?}`.
-- `POST /sheets/values` — batch-writes cell ranges; accepts `{spreadsheetId, data: [{range, values}]}` (`valueInputOption` fixed to `"USER_ENTERED"`). No default spreadsheet — callers always specify one.
-- `POST /trello/cards` — creates a Trello card; accepts `{list?: "inbox", name, description?}`. `list` is one of the fixed list keys in `utils/trello.js` (`todo`, `inbox`, `prioritized`, `doing`, `waiting`, `habits`, `done`). Returns `{id, url}`.
-- `GET /trello/cards/search?q=<query>&limit?` — full-text search for card **titles only** on the single managed board, excluding the `done` list (biggest list, rarely what's being looked for). Despite older Trello docs implying description/comments are also indexed, testing against this board showed they aren't; `partial: true` is set so obvious substring matches aren't missed, but there's no fuzzy/typo-tolerant matching. Returns `{cards: [{id, name, description, url, list}]}`, `list` resolved to its name.
-- `PATCH /trello/cards/:id` — updates a card; accepts `{name?, note?, list?, direction?: "left"|"right"}`, at least one required (`list` and `direction` are mutually exclusive). Only provided fields are touched. `note` never overwrites the description — always prepends `"[bot] <note>\n---\n"` to whatever's there. `list` moves to a named list (see keys above); `direction` moves one position left/right along the board's fixed list order instead (errors if already at the first/last list). Returns `{id, name, description, url}`.
+### Splitwise
+
+Being replaced by Settle Up (Splitwise started charging for API usage). Both route families are live during the dual-write phase.
+
+- `POST /splitwise/expenses` — creates a Splitwise expense; consolidates solo/equal/uneven/group logic Guimail and GuiDo each used to implement separately. Accepts `{description, amount, currency, details?, date?, splitWith?, paidBy?, owedAmounts?, groupId?, source?}`. Falls back to a solo expense (with a note) if a name can't be resolved or `owedAmounts` don't sum to `amount`. **Also fires a fire-and-forget Settle Up mirror** for household-only expenses (see below) and solo expenses
+- `GET /splitwise/friends` — parsed `SPLITWISE_FRIENDS` list (`{id, name, nickname}[]`), for a friend picker
+- `GET /splitwise/groups` — user's Splitwise groups (`{id, name}[]`), for a group picker
+
+### Settle Up
+
+`POST /settleup/expenses` — the replacement for `/splitwise/expenses`. Not interface-compatible, and not general-purpose: scoped to exactly two fixed people (Gui, Georgia) and two fixed groups, no arbitrary friends. Accepts `{description, amount, currency, details?, date?, split?, paidBy?, category?, source?}`; returns `{expense: {id}}`.
+
+| `split` | Result |
+|---|---|
+| omitted | solo expense in the personal group (Gui only) |
+| `"equal"` | 50/50 in the household group |
+| `{gui, georgia}` | exact amounts in the household group, must sum to `amount` |
+
+`paidBy` (`"gui"` default or `"georgia"`) only applies when `split` is set.
+
+### Calendar, flights, tasks, sheets
+
+- `POST /calendar/events` — creates a Google Calendar event; accepts `{summary, start, end, timeZone?, location?, description?, calendar?: "default"|"shared", reminders?, isSpecialProject?}`. All-day vs timed is inferred from whether `start` contains `T`
+- `GET /flightaware/track?flightNumber=<IATA>` — resolves an IATA flight number to a live-tracking URL, or `{url: null}`. Callers compose this with `/calendar/events` themselves
+- `POST /tasks` — creates a Google Task; accepts `{title, notes?, due?, taskListId?}`. `due` is date-only — Google Tasks silently discards time-of-day
+- `GET /tasks` — lists tasks (`taskListId?`, `showCompleted?`); returns `{id, title, notes, due, status}[]`
+- `PATCH /tasks/:id` — updates a task's status (default `"completed"`); accepts `{status?, taskListId?}`
+- `POST /sheets/values` — batch-writes cell ranges; accepts `{spreadsheetId, data: [{range, values}]}` (`valueInputOption` fixed to `"USER_ENTERED"`). No default spreadsheet — callers always specify one
+
+### Trello
+
+- `POST /trello/cards` — creates a card; accepts `{list?: "inbox", name, description?}`. `list` is one of the fixed list keys in `utils/trello.js` (`todo`, `inbox`, `prioritized`, `doing`, `waiting`, `habits`, `done`). Returns `{id, url}`
+- `GET /trello/cards/search?q=<query>&limit?` — full-text search for card **titles only** on the single managed board, excluding the `done` list (biggest list, rarely what's being looked for). Despite older Trello docs implying description/comments are also indexed, testing against this board showed they aren't; `partial: true` is set so obvious substring matches aren't missed, but there's no fuzzy/typo-tolerant matching. Returns `{cards: [{id, name, description, url, list}]}`, `list` resolved to its name
+- `PATCH /trello/cards/:id` — accepts `{name?, note?, list?, direction?: "left"|"right"}`, at least one required (`list` and `direction` are mutually exclusive). Only provided fields are touched. `note` never overwrites the description — always prepends `"[bot] <note>\n---\n"` to whatever's there. `list` moves to a named list (see keys above); `direction` moves one position left/right along the board's fixed list order instead (errors if already at the first/last list). Returns `{id, name, description, url}`
 
 ## Auth
 
-Each route requires `Authorization: Bearer <token>`, validated in `auth.js` against any env var named `GUIDDLEWARE_SECRET_<CONSUMER>`. The matched consumer is tagged on Sentry events (`req.consumer`), not used for branching.
+Each route requires `Authorization: Bearer <token>`, validated in `auth.js` against any env var named `GUIDDLEWARE_SECRET_<CONSUMER>`. The matched consumer is tagged on Sentry events (`req.consumer`), not used for branching. Rate-limited to 10 requests per 10 minutes per consumer (`express-rate-limit`, keyed off `req.consumer`). `helmet()` disables `X-Powered-By` and applies other HTTP header hardening.
 
 `index.js` sets `invoker: "public"` — v2 Cloud Functions default to requiring an IAM `roles/run.invoker` grant, which would 401 before reaching Express. Access control is the bearer-token check above, not IAM.
-
-Rate-limited to 10 requests per 10 minutes per consumer (`express-rate-limit`, keyed off `req.consumer`). `helmet()` disables `X-Powered-By` and other HTTP header hardening.
 
 ## Utilities
 
 Each in `tools/utils/`, ported/consolidated from Guimail's equivalents. `axiosClient.js`, `googleAuth.js`, `googleCalendar.js`, `flightAware.js`, `googleSheets.js` are unchanged. `splitwise.js` is the consolidated version, with an optional `groupId` threaded through every expense creator plus `getFriendsList`/`getGroups` for picker UIs.
 
 `settleUp.js` is the Settle Up client, replacing `splitwise.js`:
+
 - Auth is Firebase email/password for a dedicated bot account, inline in this file (unlike `googleAuth.js`, which is its own file because two consumers share it — Settle Up auth has only one consumer)
 - Signs in once, refreshes the ID token 5 minutes before its hourly expiry
 - `createExpense` takes an explicit `groupId` (the route picks household vs personal) and posts to `/transactions/<groupId>/<txId>.json`
@@ -52,19 +67,21 @@ Settle Up group/permission/member creation can't be scripted over REST — secur
 
 ## Required env vars
 
-`SENTRY_DSN`, `SPLITWISE_API_KEY`, `SPLITWISE_FRIENDS`, `SPLITWISE_ID_GUI`, `SPLITWISE_ID_GEORGIA`, `SETTLEUP_WEB_API_KEY`, `SETTLEUP_DATABASE_URL`, `SETTLEUP_BOT_EMAIL`, `SETTLEUP_BOT_PASSWORD`, `SETTLEUP_GROUP_ID_HOUSEHOLD`, `SETTLEUP_GROUP_ID_PERSONAL`, `SETTLEUP_MEMBER_ID_GUI_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GEORGIA_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GUI_PERSONAL`, `GOOGLE_CAL_DEFAULT_ID`, `GOOGLE_CAL_SHARED_ID`, `FLIGHTAWARE_AEROAPI_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_TASKS_REFRESH_TOKEN`, `GOOGLE_TASKS_LIST_ID`, `TRELLO_API_KEY`, `TRELLO_TOKEN`, one `GUIDDLEWARE_SECRET_<CONSUMER>` per consumer — kept in `tools/.env` (gitignored). Also needs `tools/service-account-key.json` (gitignored).
+Kept in `tools/.env` (gitignored). Also needs `tools/service-account-key.json` (gitignored).
+
+`SENTRY_DSN`, `SPLITWISE_API_KEY`, `SPLITWISE_FRIENDS`, `SPLITWISE_ID_GUI`, `SPLITWISE_ID_GEORGIA`, `SETTLEUP_WEB_API_KEY`, `SETTLEUP_DATABASE_URL`, `SETTLEUP_BOT_EMAIL`, `SETTLEUP_BOT_PASSWORD`, `SETTLEUP_GROUP_ID_HOUSEHOLD`, `SETTLEUP_GROUP_ID_PERSONAL`, `SETTLEUP_MEMBER_ID_GUI_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GEORGIA_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GUI_PERSONAL`, `GOOGLE_CAL_DEFAULT_ID`, `GOOGLE_CAL_SHARED_ID`, `FLIGHTAWARE_AEROAPI_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_TASKS_REFRESH_TOKEN`, `GOOGLE_TASKS_LIST_ID`, `TRELLO_API_KEY`, `TRELLO_TOKEN`, one `GUIDDLEWARE_SECRET_<CONSUMER>` per consumer.
 
 - `SPLITWISE_FRIENDS` — minified JSON array of `{id, name, nickname}`; source is `tools/scripts/friends.json` (gitignored); run `npm run friends` to update `.env`; indexed by first name, full name, and each nickname token
 - `SETTLEUP_WEB_API_KEY`/`SETTLEUP_DATABASE_URL` — sandbox: public key + `https://settle-up-sandbox.firebaseio.com`; live: key must come from Step Up Labs, don't hardcode until confirmed
 - `SETTLEUP_BOT_EMAIL`/`SETTLEUP_BOT_PASSWORD` — dedicated bot credentials, created manually; see `scripts/settleup-setup.md`
 - `SETTLEUP_GROUP_ID_HOUSEHOLD`/`SETTLEUP_GROUP_ID_PERSONAL` — the bot needs read/write permission (level `20`) on each, granted via the app
-- `SETTLEUP_MEMBER_ID_GUI_HOUSEHOLD`/`SETTLEUP_MEMBER_ID_GEORGIA_HOUSEHOLD`/`SETTLEUP_MEMBER_ID_GUI_PERSONAL` — per-group IDs (Gui's ID differs between groups); found via `node --env-file=.env scripts/settleUpDiscover.js`
-- `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`/`GOOGLE_TASKS_REFRESH_TOKEN`/`GOOGLE_TASKS_LIST_ID` — OAuth Desktop client in the `guiruggiero` GCP project, consent screen published to "In production" (no fixed token expiry); `getGoogleOAuthToken.js`/`listGoogleTaskLists.js` are one-off local scripts, not deployed
-
-## Local testing
-
-The Firebase emulator refuses to load without `firebase-admin` in `node_modules`, even though nothing here uses it. Don't add it to `package.json` — Cloud Build installs full `node_modules` before deploying, and `firebase-admin@14` conflicts with `firebase-functions@7`'s peer requirement, failing the deploy with `ERESOLVE`. If needed locally, `npm install firebase-admin` transiently and uninstall before deploying/committing.
+- `SETTLEUP_MEMBER_ID_*` — per-group IDs (Gui's ID differs between groups); found via `node --env-file=.env scripts/settleUpDiscover.js`
+- `GOOGLE_OAUTH_*`/`GOOGLE_TASKS_*` — OAuth Desktop client in the `guiruggiero` GCP project, consent screen published to "In production" (no fixed token expiry); `getGoogleOAuthToken.js`/`listGoogleTaskLists.js` are one-off local scripts, not deployed
 
 ## Deploy
 
 `npm run deploy` → `firebase deploy --only functions:guiddleware`, into the shared `guiruggiero` project.
+
+## Local testing
+
+The Firebase emulator refuses to load without `firebase-admin` in `node_modules`, even though nothing here uses it. Don't add it to `package.json` — Cloud Build installs full `node_modules` before deploying, and `firebase-admin@14` conflicts with `firebase-functions@7`'s peer requirement, failing the deploy with `ERESOLVE`. If needed locally, `npm install firebase-admin` transiently and uninstall before deploying/committing.
