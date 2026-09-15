@@ -21,8 +21,9 @@ Sentry.init({
     enableLogs: true,
 });
 const CLAUDE_BIN = execSync("command -v claude").toString().trim(); // spawn() never falls back to a PATH lookup
+const GIT_BIN = execSync("command -v git").toString().trim(); // Same reasoning
 const TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
-const CURRENT_COMMIT = execSync("git rev-parse --short HEAD").toString().trim();
+const CURRENT_COMMIT = execSync(`${GIT_BIN} rev-parse --short HEAD`).toString().trim();
 
 // Rate limiter
 const gatewayRateLimit = rateLimit({
