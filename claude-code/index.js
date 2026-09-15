@@ -22,6 +22,7 @@ Sentry.init({
 });
 const CLAUDE_BIN = execSync("command -v claude").toString().trim(); // spawn() never falls back to a PATH lookup
 const TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
+const CURRENT_COMMIT = execSync("git rev-parse --short HEAD").toString().trim();
 
 // Rate limiter
 const gatewayRateLimit = rateLimit({
@@ -32,11 +33,33 @@ const gatewayRateLimit = rateLimit({
     keyGenerator: (req) => req.consumer, // Caps requests per consumer
     handler: (req, res) => res.status(429).send("Too many requests"),
 });
+const healthRateLimit = rateLimit({
+    limit: 60,
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => res.status(429).send("Too many requests"),
+});
+
+// Browser origins allowed to read health endpoint
+const allowedOrigins = [
+    "https://guiruggiero.com",
+    "https://probable-firmly-gobbler.ngrok-free.app",
+];
 
 // Express app
 const app = express();
 app.use(express.json({limit: "5mb"})); // POST request parser with size limit
 app.use(helmet()); // HTTP header security
+
+// Health/status endpoint - registered before auth, unauthenticated by design
+app.get("/health", healthRateLimit, (req, res) => {
+    const matchedOrigin = allowedOrigins.find((origin) => origin === req.headers.origin);
+    if (matchedOrigin) res.set("Access-Control-Allow-Origin", matchedOrigin); // Echo our own known-safe value
+
+    res.status(200).json({commit: CURRENT_COMMIT});
+});
+
 app.use(authenticate);
 app.use(gatewayRateLimit);
 

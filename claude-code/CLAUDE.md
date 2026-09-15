@@ -12,10 +12,16 @@ Claude Code Gateway (`claude-code/index.js`). Express server that spawns `claude
 
 **Multi-turn sessions**: accepts optional `sessionId` and `resumePrompt` in the request body; resumes via `claude --resume <sessionId> -p <resumePrompt>`; falls back to a fresh session if resume fails (expired or missing session ID).
 
+**`GET /health`**: unauthenticated status route (its own looser `healthRateLimit`, 60 per 10 minutes), registered before `app.use(authenticate)` so it's deliberately exempt. Polled by the guiruggiero.com admin dashboard. Returns `{commit}` with an `Access-Control-Allow-Origin` header echoed back only for origins in the local `allowedOrigins` list. `commit` comes from `git rev-parse --short HEAD` run at startup, not an env var — this repo has no CI/CD deploy step, it runs straight from the checkout on code-server.
+
 ## Required env vars
 
-`CLAUDE_CODE_GATEWAY_PATH` (HTTP endpoint path, e.g. `/run`), one `CLAUDE_CODE_GATEWAY_SECRET_<CONSUMER>` per consumer, `EXPRESS_PORT`, `SENTRY_DSN` — kept in `claude-code/.env` (gitignored).
+`CLAUDE_CODE_GATEWAY_PATH` (never state its value here, this repo is public; it spawns `claude -p`. Every consumer holds the same value under the same var name in its own `.env`/Infisical), one `CLAUDE_CODE_GATEWAY_SECRET_<CONSUMER>` per consumer, `EXPRESS_PORT`, `SENTRY_DSN` — kept in `claude-code/.env` (gitignored).
 
 ## PM2
 
-App name: `claudeCodeGateway`. Managed via `claude-code/pm2.config.js`. Runs on code-server.
+App name: `claudeCodeGateway`. Managed via `claude-code/pm2.config.js`. Runs on code-server, bound to `127.0.0.1:3131` only.
+
+## Cloudflare Tunnel
+
+Code-server runs its own `cloudflared` tunnel (separate from runtime-server's), fronting `claudecode.guiruggiero.com`. Zero Trust → Networks → Tunnels has explicit **Published application routes** forwarded unstripped to `http://localhost:3131`, deliberately not a `*` catch-all.
