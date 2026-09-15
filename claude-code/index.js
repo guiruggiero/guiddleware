@@ -25,20 +25,20 @@ const GIT_BIN = execSync("command -v git").toString().trim(); // Same reasoning
 const TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
 const CURRENT_COMMIT = execSync(`${GIT_BIN} rev-parse --short HEAD`).toString().trim();
 
-// Rate limiter
+// Rate limiters
+const healthRateLimit = rateLimit({
+    limit: 60,
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => res.status(429).send("Too many requests"),
+});
 const gatewayRateLimit = rateLimit({
     limit: 3,
     windowMs: 10 * 60 * 1000, // 10 minutes
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req) => req.consumer, // Caps requests per consumer
-    handler: (req, res) => res.status(429).send("Too many requests"),
-});
-const healthRateLimit = rateLimit({
-    limit: 60,
-    windowMs: 10 * 60 * 1000, // 10 minutes
-    standardHeaders: true,
-    legacyHeaders: false,
     handler: (req, res) => res.status(429).send("Too many requests"),
 });
 
