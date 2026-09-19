@@ -34,4 +34,37 @@ router.post("/values", async (req, res) => {
   }
 });
 
+// Appends new rows after existing data, never overwriting anything
+router.post("/append", async (req, res) => {
+  const {spreadsheetId, range, values} = req.body;
+  if (!spreadsheetId || !range || !Array.isArray(values) ||
+      values.length === 0) {
+    return res.status(400)
+      .json({error: "Missing spreadsheetId, range, or values"});
+  }
+
+  try {
+    const sheets = await getSheetsClient();
+    await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range,
+      valueInputOption: "USER_ENTERED",
+      insertDataOption: "INSERT_ROWS",
+      resource: {values},
+    });
+
+    Sentry.logger.info("Google Sheet rows appended", {
+      spreadsheetId, range, rowCount: values.length, consumer: req.consumer,
+    });
+
+    res.json({success: true});
+  } catch (error) {
+    Sentry.captureException(error, {extra: {spreadsheetId, range}});
+
+    res.status(502).json({error: error.message});
+
+    await Sentry.flush(2000);
+  }
+});
+
 export default router;

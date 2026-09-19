@@ -34,6 +34,7 @@ Being replaced by Settle Up (Splitwise started charging for API usage). Both rou
 - `GET /tasks` — lists tasks (`taskListId?`, `showCompleted?`); returns `{id, title, notes, due, status}[]`
 - `PATCH /tasks/:id` — updates a task's status (default `"completed"`); accepts `{status?, taskListId?}`
 - `POST /sheets/values` — batch-writes cell ranges; accepts `{spreadsheetId, data: [{range, values}]}` (`valueInputOption` fixed to `"USER_ENTERED"`). No default spreadsheet — callers always specify one
+- `POST /sheets/append` — appends new rows after existing data on a sheet/tab, never overwriting; accepts `{spreadsheetId, range, values}` (`values` a 2D array of rows, `valueInputOption` fixed to `"USER_ENTERED"`, `insertDataOption` fixed to `"INSERT_ROWS"`). `range` just needs to resolve to the target tab/table (e.g. `"Sheet2!A:C"`) — Sheets finds the next empty row itself
 
 ### Trello
 
