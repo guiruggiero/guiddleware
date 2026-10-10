@@ -27,7 +27,13 @@ if (!idPattern.test(uid)) {
   process.exit(1);
 }
 
-const db = axios.create({baseURL: databaseUrl});
+// Only talk to Settle Up's Firebase database, rebuilt from the validated hostname
+const dbUrl = new URL(databaseUrl);
+if (dbUrl.protocol !== "https:" || !dbUrl.hostname.endsWith(".firebaseio.com")) {
+  console.error("SETTLEUP_DATABASE_URL must be an https *.firebaseio.com URL");
+  process.exit(1);
+}
+const db = axios.create({baseURL: `https://${dbUrl.hostname}`});
 const auth = {params: {auth: idToken}};
 
 // Finds every group the bot has been granted access to
