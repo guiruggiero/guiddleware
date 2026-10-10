@@ -21,13 +21,18 @@ const {data: signIn} = await axios.post(
   {params: {key: apiKey}},
 );
 const {idToken, localId: uid} = signIn;
+const idPattern = /^[\w-]+$/;
+if (!idPattern.test(uid)) {
+  console.error("Unexpected uid format in sign-in response");
+  process.exit(1);
+}
 
 const db = axios.create({baseURL: databaseUrl});
 const auth = {params: {auth: idToken}};
 
 // Finds every group the bot has been granted access to
-const {data: userGroups} = await db.get(`/userGroups/${uid}.json`, auth);
-const idPattern = /^[\w-]+$/;
+const {data: userGroups} = await db.get(
+  `/userGroups/${encodeURIComponent(uid)}.json`, auth);
 const groupIds = Object.keys(userGroups ?? {})
   .filter((id) => idPattern.test(id));
 if (groupIds.length === 0) {
@@ -38,8 +43,9 @@ if (groupIds.length === 0) {
 
 // Prints each group's name/ID and every member's name/ID
 for (const groupId of groupIds) {
-  const {data: group} = await db.get(`/groups/${groupId}.json`, auth);
-  const {data: members} = await db.get(`/members/${groupId}.json`, auth);
+  const safeGroupId = encodeURIComponent(groupId); // Already validated above
+  const {data: group} = await db.get(`/groups/${safeGroupId}.json`, auth);
+  const {data: members} = await db.get(`/members/${safeGroupId}.json`, auth);
 
   console.log(`\nGroup: ${group?.name ?? "(unnamed)"} (${groupId})`);
   for (const [memberId, member] of Object.entries(members ?? {})) {
