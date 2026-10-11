@@ -27,9 +27,10 @@ if (!idPattern.test(uid)) {
   process.exit(1);
 }
 
-// Only talk to Settle Up's Firebase database, rebuilt from the validated hostname
+// Only talk to Settle Up's Firebase database, rebuilt from validated hostname
 const dbUrl = new URL(databaseUrl);
-if (dbUrl.protocol !== "https:" || !dbUrl.hostname.endsWith(".firebaseio.com")) {
+if (dbUrl.protocol !== "https:" ||
+  !dbUrl.hostname.endsWith(".firebaseio.com")) {
   console.error("SETTLEUP_DATABASE_URL must be an https *.firebaseio.com URL");
   process.exit(1);
 }
