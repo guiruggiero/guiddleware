@@ -8,13 +8,13 @@
   "private": true,
   "main": "index.js",
   "dependencies": {
-    "@sentry/node": "^11.1.0",
+    "@sentry/node": "^11.7.0",
     "axios": "^1.18.0",
     "axios-retry": "^4.5.0",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.1",
     "firebase-functions": "^7.4.0",
-    "googleapis": "^183.0.0",
+    "googleapis": "^185.0.0",
     "helmet": "^8.3.0"
   },
   "devDependencies": {
