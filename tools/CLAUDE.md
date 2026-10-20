@@ -50,7 +50,7 @@ Each route requires `Authorization: Bearer <token>`, validated in `auth.js` agai
 
 ## Utilities
 
-Each in `tools/utils/`, ported/consolidated from Guimail's equivalents. `axiosClient.js`, `googleAuth.js`, `googleCalendar.js`, `flightAware.js`, `googleSheets.js` are unchanged. `splitwise.js` is the consolidated version, with an optional `groupId` threaded through every expense creator plus `getFriendsList`/`getGroups` for picker UIs.
+Each in `tools/utils/`. `splitwise.js` has an optional `groupId` threaded through every expense creator plus `getFriendsList`/`getGroups` for picker UIs.
 
 `settleUp.js` is the Settle Up client, replacing `splitwise.js`:
 
@@ -62,9 +62,9 @@ Each in `tools/utils/`, ported/consolidated from Guimail's equivalents. `axiosCl
 
 Settle Up group/permission/member creation can't be scripted over REST — security rules reject those writes (and even reads) outside the app itself, confirmed by testing. See `scripts/settleup-setup.md`. Two groups exist: household (Gui + Georgia) and personal (Gui only, mirrors Splitwise's groupless/personal bucket — Settle Up has no such concept, every transaction belongs to a group).
 
-`googleTasks.js` authenticates via OAuth2 with a refresh token, not `googleAuth.js`'s service account — personal Task lists have no ACL to grant it. OAuth setup is done and live; `getGoogleOAuthToken.js` can regenerate a refresh token if it's ever revoked.
+`googleTasks.js` authenticates via OAuth2 with a refresh token, not `googleAuth.js`'s service account — personal Task lists have no ACL to grant it. `getGoogleOAuthToken.js` can regenerate a refresh token if it's ever revoked.
 
-`trello.js` is a thin `axios`-based client (via `createRetryClient`, same as `flightAware.js`/`splitwise.js`) — no `trello.js` npm package, to avoid a second HTTP-client pattern. Key/token travel as query params (Trello's own auth scheme). Scoped to a single board, whose ID and 7 lists (fixed, always the same, in board order) are hardcoded in the file — not secrets, and knowing the fixed order is what makes `direction: "left"|"right"` moves possible. Create, search, and update are built; a webhook receiver (for live sync) is not.
+`trello.js` is a thin `axios`-based client (via `createRetryClient`, same as `flightAware.js`/`splitwise.js`) — no `trello.js` npm package, to avoid a second HTTP-client pattern. Key/token travel as query params (Trello's own auth scheme). Scoped to a single board, whose ID and 7 lists (fixed, always the same, in board order) are hardcoded in the file — not secrets, and knowing the fixed order is what makes `direction: "left"|"right"` moves possible.
 
 ## Required env vars
 
