@@ -42,9 +42,15 @@ Being replaced by Settle Up (Splitwise started charging for API usage). Both rou
 - `GET /trello/cards/search?q=<query>&limit?` — full-text search for card **titles only** on the single managed board, excluding the `done` list (biggest list, rarely what's being looked for). Despite older Trello docs implying description/comments are also indexed, testing against this board showed they aren't; `partial: true` is set so obvious substring matches aren't missed, but there's no fuzzy/typo-tolerant matching. Returns `{cards: [{id, name, description, url, list}]}`, `list` resolved to its name
 - `PATCH /trello/cards/:id` — accepts `{name?, note?, list?, direction?: "left"|"right"}`, at least one required (`list` and `direction` are mutually exclusive). Only provided fields are touched. `note` never overwrites the description — always prepends `"[bot] <note>\n---\n"` to whatever's there. `list` moves to a named list (see keys above); `direction` moves one position left/right along the board's fixed list order instead (errors if already at the first/last list). Returns `{id, name, description, url}`
 
+### On Air sign
+
+`POST /onairsign` — sets the sign's color by writing the Adafruit IO `on-air-sign` feed (the Pico listens over MQTT). Accepts `{state: "off"|"yellow"|"red", minutes?: 1-480}`; the feed value is built server-side (`red:60` makes the Pico hold 60 minutes instead of 5; `off` ignores `minutes`). The only browser-facing route: see Auth. Returns `{value}`.
+
 ## Auth
 
-Each route requires `Authorization: Bearer <token>`, validated in `auth.js` against any env var named `GUIDDLEWARE_SECRET_<CONSUMER>`. The matched consumer is tagged on Sentry events (`req.consumer`), not used for branching. Rate-limited to 10 requests per 10 minutes per consumer (`express-rate-limit`, keyed off `req.consumer`). `helmet()` disables `X-Powered-By` and applies other HTTP header hardening.
+**Browser route (`/onairsign`)**: mounted before `authenticate`, with its own chain in `index.js`: CORS (only `guiruggiero.com`) → `authenticateOwner` (in `auth.js`) → per-minute rate limit. It verifies a Firebase ID token (`Authorization: Bearer`) with `firebase-admin`'s `verifyIdToken` and requires the `uid` to be the owner's (same as the website's `firestore.rules`). CORS only stops other websites; the token check is the real protection.
+
+**Server-to-server routes (everything else)**: each route requires `Authorization: Bearer <token>`, validated in `auth.js` against any env var named `GUIDDLEWARE_SECRET_<CONSUMER>`. The matched consumer is tagged on Sentry events (`req.consumer`), not used for branching. Rate-limited to 10 requests per 10 minutes per consumer (`express-rate-limit`, keyed off `req.consumer`). `helmet()` disables `X-Powered-By` and applies other HTTP header hardening.
 
 `index.js` sets `invoker: "public"` — v2 Cloud Functions default to requiring an IAM `roles/run.invoker` grant, which would 401 before reaching Express. Access control is the bearer-token check above, not IAM.
 
@@ -64,19 +70,22 @@ Settle Up group/permission/member creation can't be scripted over REST — secur
 
 `googleTasks.js` authenticates via OAuth2 with a refresh token, not `googleAuth.js`'s service account — personal Task lists have no ACL to grant it. `getGoogleOAuthToken.js` can regenerate a refresh token if it's ever revoked.
 
+`adafruit.js` writes to the Adafruit IO feed with the `ADAFRUIT_IO_KEY` (header `X-AIO-Key`), same `createRetryClient` pattern.
+
 `trello.js` is a thin `axios`-based client (via `createRetryClient`, same as `flightAware.js`/`splitwise.js`) — no `trello.js` npm package, to avoid a second HTTP-client pattern. Key/token travel as query params (Trello's own auth scheme). Scoped to a single board, whose ID and 7 lists (fixed, always the same, in board order) are hardcoded in the file — not secrets, and knowing the fixed order is what makes `direction: "left"|"right"` moves possible.
 
 ## Required env vars
 
 Kept in `tools/.env` (gitignored). Also needs `tools/service-account-key.json` (gitignored).
 
-`SENTRY_DSN`, `SPLITWISE_API_KEY`, `SPLITWISE_FRIENDS`, `SPLITWISE_ID_GUI`, `SPLITWISE_ID_GEORGIA`, `SETTLEUP_WEB_API_KEY`, `SETTLEUP_DATABASE_URL`, `SETTLEUP_BOT_EMAIL`, `SETTLEUP_BOT_PASSWORD`, `SETTLEUP_GROUP_ID_HOUSEHOLD`, `SETTLEUP_GROUP_ID_PERSONAL`, `SETTLEUP_MEMBER_ID_GUI_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GEORGIA_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GUI_PERSONAL`, `GOOGLE_CAL_DEFAULT_ID`, `GOOGLE_CAL_SHARED_ID`, `FLIGHTAWARE_AEROAPI_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_TASKS_REFRESH_TOKEN`, `GOOGLE_TASKS_LIST_ID`, `TRELLO_API_KEY`, `TRELLO_TOKEN`, one `GUIDDLEWARE_SECRET_<CONSUMER>` per consumer.
+`SENTRY_DSN`, `SPLITWISE_API_KEY`, `SPLITWISE_FRIENDS`, `SPLITWISE_ID_GUI`, `SPLITWISE_ID_GEORGIA`, `SETTLEUP_WEB_API_KEY`, `SETTLEUP_DATABASE_URL`, `SETTLEUP_BOT_EMAIL`, `SETTLEUP_BOT_PASSWORD`, `SETTLEUP_GROUP_ID_HOUSEHOLD`, `SETTLEUP_GROUP_ID_PERSONAL`, `SETTLEUP_MEMBER_ID_GUI_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GEORGIA_HOUSEHOLD`, `SETTLEUP_MEMBER_ID_GUI_PERSONAL`, `GOOGLE_CAL_DEFAULT_ID`, `GOOGLE_CAL_SHARED_ID`, `FLIGHTAWARE_AEROAPI_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_TASKS_REFRESH_TOKEN`, `GOOGLE_TASKS_LIST_ID`, `TRELLO_API_KEY`, `TRELLO_TOKEN`, `ADAFRUIT_IO_KEY`, one `GUIDDLEWARE_SECRET_<CONSUMER>` per consumer.
 
 - `SPLITWISE_FRIENDS` — minified JSON array of `{id, name, nickname}`; source is `tools/scripts/friends.json` (gitignored); run `npm run friends` to update `.env`; indexed by first name, full name, and each nickname token
 - `SETTLEUP_WEB_API_KEY`/`SETTLEUP_DATABASE_URL` — sandbox: public key + `https://settle-up-sandbox.firebaseio.com`; live: key must come from Step Up Labs, don't hardcode until confirmed
 - `SETTLEUP_BOT_EMAIL`/`SETTLEUP_BOT_PASSWORD` — dedicated bot credentials, created manually; see `scripts/settleup-setup.md`
 - `SETTLEUP_GROUP_ID_HOUSEHOLD`/`SETTLEUP_GROUP_ID_PERSONAL` — the bot needs read/write permission (level `20`) on each, granted via the app
 - `SETTLEUP_MEMBER_ID_*` — per-group IDs (Gui's ID differs between groups); found via `node --env-file=.env scripts/settleUpDiscover.js`
+- `ADAFRUIT_IO_KEY` — Adafruit IO key with write access to the `on-air-sign` feed; stays server-side, never sent to the browser
 - `GOOGLE_OAUTH_*`/`GOOGLE_TASKS_*` — OAuth Desktop client in the `guiruggiero` GCP project, consent screen published to "In production" (no fixed token expiry); `getGoogleOAuthToken.js`/`listGoogleTaskLists.js` are one-off local scripts, not deployed
 
 ## Deploy
@@ -85,4 +94,4 @@ Kept in `tools/.env` (gitignored). Also needs `tools/service-account-key.json` (
 
 ## Local testing
 
-The Firebase emulator refuses to load without `firebase-admin` in `node_modules`, even though nothing here uses it. Don't add it to `package.json` — Cloud Build installs full `node_modules` before deploying, and `firebase-admin@14` conflicts with `firebase-functions@7`'s peer requirement, failing the deploy with `ERESOLVE`. If needed locally, `npm install firebase-admin` transiently and uninstall before deploying/committing.
+The Firebase emulator needs `firebase-admin` in `node_modules`; it's a direct dependency now (used by `authenticateOwner` in `auth.js`).

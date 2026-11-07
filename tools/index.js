@@ -4,7 +4,9 @@ import {onRequest} from "firebase-functions/v2/https";
 import express from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import {authenticate} from "./auth.js";
+import cors from "cors";
+import {authenticate, authenticateOwner} from "./auth.js";
+import onAirSignRouter from "./routes/onAirSign.js";
 import splitwiseRouter from "./routes/splitwise.js";
 import settleUpRouter from "./routes/settleUp.js";
 import calendarRouter from "./routes/calendar.js";
@@ -26,20 +28,35 @@ Sentry.init({
   enableLogs: true,
 });
 
-// Rate limiter
-const toolsRateLimit = rateLimit({
-  limit: 10,
-  windowMs: 10 * 60 * 1000, // 10 minutes
+// Rate limiters, both capping requests per consumer
+const makeRateLimit = (limit, windowMs) => rateLimit({
+  limit,
+  windowMs,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.consumer, // Caps requests per consumer
+  keyGenerator: (req) => req.consumer,
   handler: (req, res) => res.status(429).send("Too many requests"),
 });
+const toolsRateLimit = makeRateLimit(10, 10 * 60 * 1000); // 10 per 10 minutes
+
+// Browser route: CORS locked and rate-limited
+const ownerCors = cors({
+  origin: ["https://guiruggiero.com", "https://www.guiruggiero.com"],
+  methods: ["POST"],
+  allowedHeaders: ["Authorization", "Content-Type"],
+});
+const ownerRateLimit = makeRateLimit(10, 60 * 1000); // 10 per minute
 
 // Express app, internally routed by path
 const app = express();
 app.use(helmet()); // HTTP header security
 app.use(express.json());
+
+// Owner (browser) route: Firebase ID token, so before `authenticate`
+app.use("/onairsign", ownerCors, authenticateOwner, ownerRateLimit,
+  onAirSignRouter);
+
+// Consumer (server-to-server) routes
 app.use(authenticate);
 app.use(toolsRateLimit);
 app.use("/splitwise", splitwiseRouter);
@@ -50,7 +67,6 @@ app.use("/tasks", tasksRouter);
 app.use("/sheets", sheetsRouter);
 app.use("/trello", trelloRouter);
 
-// `invoker: "public"` allows unauthenticated invocations at the IAM layer;
-// the actual access control is the bearer-token check in auth.js
+// `invoker: "public"` skips IAM; access control is in auth.js
 export const guiddleware = onRequest(
   {maxInstances: 5, timeoutSeconds: 30, invoker: "public"}, app);

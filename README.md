@@ -1,7 +1,7 @@
 [![CodeQL](https://github.com/guiruggiero/guiddleware/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/guiruggiero/guiddleware/actions/workflows/github-code-scanning/codeql)
 [![Dependencies](https://github.com/guiruggiero/guiddleware/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/guiruggiero/guiddleware/actions/workflows/dependabot/dependabot-updates)
 
-Shared backend middleware for [Guimail](https://github.com/guiruggiero/guimail) and [GuiDo](https://github.com/guiruggiero/guido) — one place for Splitwise, Settle Up, Google Calendar, FlightAware, Google Tasks, Google Sheets, and Claude Code integrations, instead of each interface hand-rolling its own.
+Shared backend middleware for [Guimail](https://github.com/guiruggiero/guimail), [GuiDo](https://github.com/guiruggiero/guido) (including Guindex), and the [website](https://github.com/guiruggiero/website) — one place for Splitwise, Settle Up, Google Calendar, FlightAware, Google Tasks, Google Sheets, Trello, the On Air sign, and Claude Code integrations, instead of each interface hand-rolling its own.
 
 ### 🏗️ Architecture
 
@@ -13,9 +13,11 @@ Three independently-deployed pieces:
 - FlightAware: resolve an IATA flight number to a live-tracking link
 - Google Tasks: create/list/complete to-do items (OAuth2, since personal task lists have no service-account sharing mechanism)
 - Google Sheets: batch-write cell ranges to any spreadsheet the service account can access; no hardcoded spreadsheet, callers say which one
+- On Air sign: set the sign's color (off/yellow/red) by writing the Adafruit IO feed; the only browser-facing route, called from the website's admin page
 - Trello: create cards on a named list, full-text title search (excluding Done), update title/notes/list (absolute or left/right)
 - One Cloud Function wrapping an Express app (real internal path routing), deployed into the same shared Firebase project as Guimail's and the website's own functions
 - Per-consumer bearer token auth; each caller is tagged for attribution, never for branching logic
+- The browser route (On Air sign) skips that and requires the owner's Firebase ID token instead, with CORS locked to the website
 - Rate-limited per consumer; `helmet` for HTTP header security
 
 #### Claude Code Gateway (`claude-code/`)
@@ -33,6 +35,8 @@ Three independently-deployed pieces:
 - `googleapis` - Google Calendar, Sheets, and Tasks (OAuth2) integration
 - `@sentry/node` - error tracking and monitoring
 - `firebase-functions` and `firebase-tools` - serverless backend and deployment
+- `firebase-admin` - Firebase ID token verification for the browser route
+- `cors` - CORS for the browser route
 - `helmet` - HTTP header security
 - `express-rate-limit` - per-consumer request rate limiting
 - `eslint` and `stylistic`/`eslint-config-google` - code linting
