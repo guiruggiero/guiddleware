@@ -41,7 +41,11 @@ const toolsRateLimit = makeRateLimit(10, 10 * 60 * 1000); // 10 per 10 minutes
 
 // Browser route: CORS locked and rate-limited
 const ownerCors = cors({
-  origin: ["https://guiruggiero.com", "https://www.guiruggiero.com"],
+  origin: [
+    "https://guiruggiero.com",
+    "https://www.guiruggiero.com",
+    "https://probable-firmly-gobbler.ngrok-free.app",
+  ],
   methods: ["POST"],
   allowedHeaders: ["Authorization", "Content-Type"],
 });

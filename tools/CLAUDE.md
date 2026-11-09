@@ -48,7 +48,7 @@ Being replaced by Settle Up (Splitwise started charging for API usage). Both rou
 
 ## Auth
 
-**Browser route (`/onairsign`)**: mounted before `authenticate`, with its own chain in `index.js`: CORS (only `guiruggiero.com`) → `authenticateOwner` (in `auth.js`) → per-minute rate limit. It verifies a Firebase ID token (`Authorization: Bearer`) with `firebase-admin`'s `verifyIdToken` and requires the `uid` to be the owner's (same as the website's `firestore.rules`). CORS only stops other websites; the token check is the real protection.
+**Browser route (`/onairsign`)**: mounted before `authenticate`, with its own chain in `index.js`: CORS (only `guiruggiero.com` and the website's ngrok testing domain) → `authenticateOwner` (in `auth.js`) → per-minute rate limit. It verifies a Firebase ID token (`Authorization: Bearer`) with `firebase-admin`'s `verifyIdToken` and requires the `uid` to be the owner's (same as the website's `firestore.rules`). CORS only stops other websites; the token check is the real protection.
 
 **Server-to-server routes (everything else)**: each route requires `Authorization: Bearer <token>`, validated in `auth.js` against any env var named `GUIDDLEWARE_SECRET_<CONSUMER>`. The matched consumer is tagged on Sentry events (`req.consumer`), not used for branching. Rate-limited to 10 requests per 10 minutes per consumer (`express-rate-limit`, keyed off `req.consumer`). `helmet()` disables `X-Powered-By` and applies other HTTP header hardening.
 
