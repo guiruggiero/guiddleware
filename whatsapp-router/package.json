@@ -13,7 +13,7 @@
     "@stylistic/eslint-plugin": "^5.9.0",
     "eslint": "^10.9.1",
     "globals": "^17.12.0",
-    "wrangler": "^4.154.0"
+    "wrangler": "^4.161.0"
   },
   "overrides": {
     "minimatch": ">=11.0.1"
@@ -21,7 +21,6 @@
   "scripts": {
     "lint": "eslint .",
     "lint-fix": "eslint . --fix",
-    "update": "npm i -D wrangler@latest",
     "whoami": "npx wrangler whoami",
     "secret": "npx wrangler secret put/delete <SECRET_NAME>",
     "deploy": "npx wrangler deploy"
