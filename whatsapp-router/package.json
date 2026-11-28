@@ -6,14 +6,14 @@
   "type": "module",
   "main": "src/index.js",
   "dependencies": {
-    "@sentry/cloudflare": "^11.12.0"
+    "@sentry/cloudflare": "^11.17.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@stylistic/eslint-plugin": "^6.0.1",
     "eslint": "^10.9.1",
     "globals": "^17.12.0",
-    "wrangler": "^4.161.0"
+    "wrangler": "^4.168.0"
   },
   "scripts": {
     "lint": "eslint .",
